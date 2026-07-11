@@ -1,5 +1,5 @@
 ﻿#
-[英文](./readme_en.md) / [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md)
+[英文](./readme_en.md) / [Tiếng Việt](./readme_vn.md)
 ---
 
 # 中文版：美泰 IQC 进料检验与追踪系统 标准操作手册

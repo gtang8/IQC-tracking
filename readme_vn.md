@@ -1,5 +1,5 @@
 ﻿#
-[英文](./readme_en.md) / [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md)
+[英文](./readme_en.md) / [中文](./readme_cn.md) 
 ---
 
 # Phiên bản tiếng Việt: Sổ tay Hướng dẫn Thao tác Tiêu chuẩn Hệ thống Theo dõi và Kiểm tra Đầu vào IQC Mattel

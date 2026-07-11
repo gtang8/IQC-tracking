@@ -1,5 +1,5 @@
 ﻿#
-[英文](./readme_en.md) / [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md)
+ [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md)
 ---
 
 # 📘 Mattel IQC Incoming Material Testing and Tracking System Standard Operating Procedure
