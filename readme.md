@@ -1,105 +1,67 @@
 #
-[中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md) 
+[英文](./readme_en.md) / [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md) 
 
 ---
 
-# 📘 Mattel IQC Incoming Material Testing and Tracking System Standard Operating Procedure
+# Generic IQC Incoming Inspection & Tracking System
 
-This system utilizes a "Dual-Role Physical Isolation" and "Offline File Relay" workflow. The **IQC Inspector** and **Quality Supervisor** operate independently on their own computers, using JSON file exports and imports to relay documents and merge data seamlessly.
+# 通用 IQC 进料检验与追踪系统
 
----
-
-## 👨‍🔧 Part 1: IQC Inspector Guide (Entry, Chem Update & Physical Test)
-
-### Step 1: Incoming Material Entry & [Chem Test Frequency] Smart Judgment
-
-1. Open the system page and fill in the delivery details in the **[1. New Incoming Batch Entry & Smart Interception Judgment]** section.
-2. **Quick Entry:** When you type the "Supplier Code" or "Supplier Name", the system will auto-match and populate the corresponding "Mattel Supplier Level".
-3. Select the "Material Category" and "Material Sub-Category" sequentially.
-4. Once filled, a **Traffic Light Judgment** for Chemical Testing will appear at the bottom:
-* 🚨 **Red Badge (Must Test):** Indicates the material has reached its testing cycle (e.g., 6/12 months expired), or it is a mandatory per-batch test for unassigned suppliers.
-* 🔒 **Green Badge (No Test Needed):** Indicates the chemical test is still valid. The system locks the input fields and auto-fills the date and report number of the last valid chemical report.
-
-
-5. Confirm the details and click **[💾 Save Batch to DB]** (保存批次入库). The record will automatically move to the Management Ledger below.
-
-### Step 2: Quick Update for [Chemical Test] Reports
-
-In practice, red-badged "Must Test" materials often arrive before the lab issues the chemical report. The system allows quick inline updates directly in the ledger:
-
-1. Once the lab issues the chemical report, locate the batch in the ledger.
-2. **Double-click** the **[Chem Report Date]** cell. A calendar picker will appear; select the date and press `Enter` to save.
-3. **Double-click** the **[Test Report No.]** cell. Type the report number (e.g., C-2026-XXXX) and press `Enter` to save.
-4. *Smart Sync Tip: If subsequent batches of this material arrive, updating the main batch's chemical report will automatically sync and lock the subsequent records. No duplicate entry is required.*
-
-### Step 3: [Physical Test] Data Entry & Preliminary Judgment
-
-1. In the ledger, click the **[⏳ Pending]** (待检验) button on the far right of the relevant record to open the Physical Inspection window.
-2. The system **automatically loads the corresponding inspection items and standard specifications** based on the Material Sub-Category you selected.
-3. Row by row, input the "Sample Qty", "Fail Qty", and "Actual Data/Remarks".
-* *Poka-Yoke Tip: After inputting "Ac" (Acceptance number) at the top, the system automatically calculates "Re" (Rejection number).*
-
-
-4. Scroll down to the **[📊 Inspector Preliminary Judgment]** section and select the result (Pass / Fail).
-5. Add any on-site abnormalities or descriptions in the **[📝 Inspector Notes]** box at the bottom.
-6. Click **[💾 Save Data Only]** at the bottom. The ledger status will change to a grey-blue `[⏳ Pending Approval]`.
-
-### Step 4: Package & Send for Approval (To Supervisor)
-
-After inspecting a batch of materials, you must send the data to the Supervisor for approval:
-
-1. Check the box on the left side of the ledger for the records you want to send (you can select multiple).
-2. Click the **[📤 Extract/Export [Selected Rows JSON] for Collaboration]** button above the ledger.
-3. The system will download a file named `待批准-YYYYMMDD-HHMMSS.json` (Pending Approval-Date-Time).
-4. Send this JSON file to the Quality Supervisor via WeChat, DingTalk, or Email.
-
-### Step 5: Receive Approval & Print Report
-
-1. Once you receive the approved file back from the Supervisor, click **[📥 Smart Import/Merge JSON]** at the top right of the page and select the file.
-2. The system will seamlessly merge the approval results into your ledger without overwriting original data. The record status will turn green and display `[✅ Approved]`.
-3. Double-click the ledger to open the physical inspection window for that record, scroll to the bottom, and click **[🖨️ Print Final Approval Report (In PDF)]**.
-* *Printing Tip: The layout is strictly locked by the system. The Inspector Notes box is fixed at a standard 8-line height to prevent formatting distortion. The generated PDF will automatically be named after the physical report number.*
-
-
+# Hệ thống Theo dõi và Kiểm tra Đầu vào IQC Đa dụng
 
 ---
 
-## 👨‍💼 Part 2: Quality Supervisor Guide (Approval & Return)
+## 🇨🇳 中文简介 (Chinese)
 
-Supervisors must approve documents in the dedicated "Supervisor Mode" to unlock maximum editing and printing permissions.
+这是一个**无需部署后端服务器的纯离线 IQC 进料检验管理工具**。通过浏览器 `LocalStorage` 存储和创新的 **JSON Smart Merge（智能双向合并引擎）** 技术，完美实现了在没有局域网的环境下，通过简单的文件导入导出，完成“检验员制单 ➔ 离线文件流转 ➔ 主管审批 ➔ 数据闭环”的全套合规工作流。特别适合网络受限的工厂车间或中小型制造企业。
 
-### Step 1: Unlock Hidden Supervisor Mode
+### ✨ 主要功能特点
 
-1. Upon opening the system, move your cursor to the main title at the top center: **"美泰 IQC 进料检验与追踪系统"**.
-2. **Double-click** the title quickly. An authentication prompt will appear.
-3. Enter the Supervisor password: `ABC123456`, and click OK.
-4. Upon successful authentication, a red `[Supervisor Mode Activated]` badge will appear next to the title, indicating that your approval and printing permissions are fully unlocked.
+1. **零部署与纯离线架构**：单 HTML 文件结构，无需安装任何数据库或 Node/Python 环境，下载双击即可运行。数据完全保存在本地浏览器中。
+2. **智能测试频率拦截 (红绿灯机制)**：系统根据内置的供应商评级（如A/B级免检期长、C级监控期短），自动判定来料是否需要强制化学测试，并能智能关联有效期内的主报告，自动锁死防篡改。
+3. **动态物理检验模板与 AQL 防呆**：根据选择的“物料大类/细类”，弹窗会自动加载对应的检验规范与标准参数。内嵌 AQL 防呆逻辑（输入 Ac 接收数，自动计算并显示 Re 拒收数）。
+4. **双角色权限物理隔离**：
+* **检验员模式（默认）**：仅可录入数据和初步判定，无法看到审批区域与打印按钮。
+* **主管模式（隐藏通道）**：双击页面顶部主标题并输入专属密码（开源演示密码为 `123456`），即可解锁隐蔽的主管审批区及终版报告打印权限。
 
-### Step 2: Import & Review Inspection Records
 
-1. Upon receiving the `待批准-xxx.json` (Pending Approval) file from the Inspector, click **[📥 Smart Import/Merge JSON]** at the top right to load it.
-2. Locate the records marked as `[⏳ Pending Approval]` in the ledger and click them to open the Physical Inspection window.
-3. Verify that the Chemical Test report information is complete, and review the physical test data, preliminary judgment, and inspector notes.
+5. **Smart Merge 离线协同引擎**：检验员导出“待批准”JSON给主管，主管批复后导出“已批准”JSON发回。导入时系统会自动精准识别记录 ID 替换状态，不覆盖本地其他无关数据。
+6. **合规级 A4 PDF 打印排版**：专为国际大厂（如 Hasbro, Mattel）外审要求设计的打印样式，输入框尺寸在打印态被严格物理固化，防止内容溢出引发的格式错乱。
 
-### Step 3: Add Comments & Approve
+---
 
-1. Scroll to the green area at the bottom: **[✍️ IQC Supervisor Final Approval Area]**.
-2. In the **[Approval Notes]** box, type your review comments, AOD (Accept on Deviation) reasons, or return instructions (this box is placed at the top of the section for easier long-text entry).
-3. Select the **[Approval Conclusion]** below (Approved / AOD / Rejected).
-4. Confirm the **[Supervisor Signature]** (QC Supervisor / QA Manager) and **[Approval Date]**.
-5. Click **[💾 Save Data Only]** at the bottom to finalize the approval.
+## 🇬🇧 English Introduction
 
-### Step 4: Return Approved Data
+This is a **serverless, fully offline IQC (Incoming Quality Control) Inspection & Tracking Tool**. Utilizing browser `LocalStorage` and an innovative **JSON Smart Merge Engine**, it achieves a seamless closed-loop workflow: "Inspector Entry ➔ Offline File Relay ➔ Supervisor Approval ➔ Data Sync" entirely without an active network or shared database. It is perfectly suited for network-restricted factory floors or Small and Medium Enterprises (SMEs).
 
-1. In the ledger, check the boxes for the records you just approved (status will now be green `[✅ Approved]`).
-2. Click the **[📤 Extract/Export [Selected Rows JSON] for Collaboration]** button above the ledger.
-3. The system will auto-download a file named `已批准-YYYYMMDD-HHMMSS.json` (Approved-Date-Time).
-4. Send this file back to the Inspector via WeChat or Email. The Inspector will import it to close the loop.
+### ✨ Key Features
 
-### Step 5: Full Disaster Recovery Backup (Weekly Task)
+1. **Zero Deployment & 100% Offline**: A single HTML file structure requires no database, Node.js, or Python environment. Just double-click to run. All data is securely stored in the local browser.
+2. **Smart Test Frequency Interception**: Automatically determines whether incoming materials require mandatory testing based on the supplier's risk level rating. It smartly links to existing valid historical reports and locks fields to prevent tampering.
+3. **Dynamic Templates & AQL Poka-Yoke**: Automatically loads specific physical inspection criteria and test standards based on material categories. Built-in AQL logic automatically calculates Rejection (Re) limits once Acceptance (Ac) numbers are entered.
+4. **Dual-Role Privilege Isolation**:
+* **Inspector Mode (Default):** Only allows data entry and preliminary judgment; hides approval areas and print buttons.
+* **Supervisor Mode (Hidden Trigger):** Double-clicking the main title and entering a password (demo password: `123456`) unlocks the hidden approval interface and PDF printing privileges.
 
-To prevent data loss due to accidental browser cache clears, the Supervisor should perform a full system backup regularly:
 
-1. Click the **[📤 Export JSON Backup]** button at the top right of the page.
-2. The system will download a master file containing the entire ledger history, all records, and the supplier database, named `Mattel_Integrated_DB_Backup_YYYYMMDD_HHMMSS.json`.
-3. Store this file on a secure company network drive or encrypted USB. If a computer is replaced, importing this file into a blank system will instantly restore 100% of your data.
+5. **Smart Merge Offline Collaboration**: Inspectors export "Pending Approval" JSONs to supervisors; supervisors approve and send back "Approved" JSONs. The system precisely matches record IDs to merge statuses without overwriting other local data.
+6. **Audit-Ready A4 PDF Printing**: CSS print media rules strictly lock text box heights to prevent pagination glitches, ensuring inspection reports look professional and meet strict international audit standards.
+
+---
+
+## 🇻🇳 Giới thiệu tiếng Việt (Vietnamese)
+
+Đây là một **công cụ quản lý kiểm tra đầu vào IQC hoàn toàn ngoại tuyến, không cần triển khai máy chủ (serverless)**. Thông qua lưu trữ `LocalStorage` của trình duyệt và công nghệ **JSON Smart Merge (Gộp thông minh hai chiều)**, hệ thống hiện thực hóa quy trình làm việc khép kín: "Nhân viên kiểm tra tạo đơn ➔ Chuyển tiếp tập tin ngoại tuyến ➔ Quản lý phê duyệt ➔ Đồng bộ dữ liệu" mà không cần mạng LAN. Rất thích hợp cho các phân xưởng bị hạn chế mạng hoặc các doanh nghiệp sản xuất vừa và nhỏ.
+
+### ✨ Các tính năng chính
+
+1. **Chạy ngoại tuyến & Không cần cài đặt**: Cấu trúc chỉ với một tệp HTML, không cần cài đặt bất kỳ cơ sở dữ liệu hay môi trường backend nào. Chỉ cần nhấp đúp để chạy. Dữ liệu được bảo mật hoàn toàn trong trình duyệt cục bộ.
+2. **Đánh giá chặn tần suất thông minh**: Tự động xác định xem vật liệu đến có cần phải kiểm tra bắt buộc hay không dựa trên cấp độ rủi ro của nhà cung cấp. Nó liên kết thông minh với các báo cáo lịch sử còn hiệu lực và khóa các trường để tránh làm sai lệch.
+3. **Mẫu kiểm tra động & Chống lỗi AQL**: Tự động tải các quy cách và tiêu chuẩn kiểm tra vật lý tương ứng dựa trên loại vật liệu. Tích hợp logic chống lỗi AQL (Nhập số nhận Ac, tự động tính số từ chối Re).
+4. **Cách ly quyền hạn hai vai trò**:
+* **Chế độ nhân viên kiểm tra (Mặc định):** Chỉ có thể nhập dữ liệu và phán đoán sơ bộ, không thể thấy khu vực phê duyệt và nút in.
+* **Chế độ Quản lý (Kích hoạt ẩn):** Nhấp đúp vào tiêu đề chính và nhập mật khẩu (mật khẩu demo: `123456`) để mở khóa khu vực phê duyệt ẩn và quyền in báo cáo PDF.
+
+
+5. **Cộng tác ngoại tuyến Smart Merge**: Nhân viên kiểm tra xuất JSON "Chờ phê duyệt" cho quản lý; quản lý phê duyệt và xuất JSON "Đã phê duyệt" gửi lại. Khi nhập tệp, hệ thống sẽ nhận diện chính xác ID để thay thế trạng thái mà không ghi đè lên các dữ liệu cục bộ khác.
+6. **In báo cáo PDF chuẩn A4 kiểm toán**: Các quy tắc CSS khi in (Print Media) được thiết kế đặc biệt để khóa chặt kích thước các ô nhập liệu, ngăn ngừa tình trạng tràn trang, đảm bảo báo cáo kiểm tra tuân thủ các tiêu chuẩn đánh giá quốc tế khắt khe.

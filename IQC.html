@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美泰 IQC 进料检验与追踪系统 v1.0</title>
+    <title>通用 IQC 进料检验与追踪系统 (开源版)</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
@@ -175,10 +175,12 @@
 
     <div class="header">
         <div class="header-title-area">
+            <!-- 💡 GitHub开源脱敏：使用通用的质量检验(Shield) SVG图标替换企业Logo -->
             <div style="display: flex; align-items: center; gap: 15px;">
-                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkwIiBmaWxsPSIjRTIyMDI3Ii8+PHRleHQgeD0iMTAwIiB5PSIxMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iLTEiPk1BVFRFTDwvdGV4dD48L3N2Zz4=" alt="Mattel Logo" style="height: 38px;">
-                <h2 ondblclick="activateSupervisorMode()" style="margin: 0;">美泰 IQC 进料检验与追踪系统 v1.0 <span id="roleBadge" class="role-badge">主管模式激活</span></h2>
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzI4YTc0NSI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweiIvPjxwYXRoIGQ9Ik05IDEybDIgMiA0LTQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+" alt="Quality Icon" style="height: 38px;">
+                <h2 ondblclick="activateSupervisorMode()" style="margin: 0;">通用 IQC 进料检验与追踪系统 <span id="roleBadge" class="role-badge">主管模式激活</span></h2>
             </div>
+            <span style="font-weight:bold; font-size: 0.85em; color:#0056b3; margin-top: 4px;">✅ 【开源脱敏版】已去除所有敏感信息与商业标识，适合用于 GitHub 部署展示</span>
         </div>
         <div class="header-actions">
             <button class="btn btn-excel" onclick="exportToExcel()">📊 导出全量 Excel</button>
@@ -197,7 +199,7 @@
                 <div class="form-group"><label>交货日期 (Ngày nhận hàng)</label><input type="date" id="deliveryDate" required onchange="evaluateTestingRequirement()"></div>
                 <div class="form-group"><label style="color:#007bff;">供应商代码 (Mã nhà cung cấp) 🔍</label><input type="text" id="supplierCode" list="supplierCodeList" required oninput="handleSupplierCodeInput()" placeholder="请键入或选择代码"><datalist id="supplierCodeList"></datalist></div>
                 <div class="form-group"><label style="color:#007bff;">供应商名称 (Tên nhà cung cấp) 🔍</label><input type="text" id="supplierName" list="supplierNameList" required oninput="handleSupplierNameInput()" placeholder="请键入或选择名称"><datalist id="supplierNameList"></datalist></div>
-                <div class="form-group"><label style="color:#28a745;">美泰供应商等级 (Cấp nhà cung cấp Mattel)</label>
+                <div class="form-group"><label style="color:#28a745;">客户供应商等级 (Cấp nhà cung cấp)</label>
                     <select id="csLevel" onchange="evaluateTestingRequirement()" style="font-weight: bold;">
                         <option value="A/B级">A/B级 (常规/低风险)</option>
                         <option value="C级">C级 (中频监控)</option>
@@ -402,6 +404,16 @@
         // 🔒 全局控制标识
         let isSupervisorMode = false;
 
+        // 💡 GitHub 开源脱敏：移除了真实的供应商信息，采用模拟数据
+        const defaultSuppliers = [
+            { code: "SUP-001", name: "测试供应商 A (Test Supplier A)", level: "C级" },
+            { code: "SUP-002", name: "测试供应商 B (Test Supplier B)", level: "A/B级" },
+            { code: "SUP-003", name: "测试供应商 C (Test Supplier C)", level: "A/B级" },
+            { code: "SUP-004", name: "测试供应商 D (Test Supplier D)", level: "A/B级" },
+            { code: "SUP-005", name: "测试供应商 E (Test Supplier E)", level: "A/B级" },
+            { code: "SUP-006", name: "测试供应商 F (Test Supplier F)", level: "非指定" }
+        ];
+
         const unitTranslationMap = { "个": "个 / Cái", "千克": "千克 / Kg", "吨": "吨 / Tấn", "克": "克 / Ghi-gam", "桶/罐": "桶/罐 / Thùng/Lon", "包": "包 / Bao" };
         
         const subCategoryMap = {
@@ -422,6 +434,7 @@
             "PIGMENT": "色粉 (Bột màu)", "SOLVENT": "溶剂 (Dung môi)", "STICKER": "贴纸/彩卡 (Nhãn dán / Thẻ màu)", "PACKAGING": "包材 (Bao bì)", "ELECTRONIC": "电子物料 (Linh kiện)", "FABRIC": "织物/皮革 (Vải / Da)"
         };
 
+        // 💡 GitHub 开源脱敏：去除了企业特定受控文件号 (如 QSOP, GQMP 等)，改为通用规范描述
         const physicalSubBlankTemplates = {
             "硬胶类 (Nhựa cứng)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
             "软胶类 (Nhựa mềm)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
@@ -441,21 +454,22 @@
             "开关": [ { id: 1, item: "外观", spec: "对签板，检查尺寸和外观" } ],
             "电子物料其他": [ { id: 1, item: "外观", spec: "对签板，检查外观，或者工程资料" } ],
             "胶袋": [ { id: 1, item: "外观", spec: "对签板，不能有封口烂及字体不完整" }, { id: 2, item: "尺寸测量", spec: "1）用直尺测试，胶袋长宽度按QC检验规格或品管部通知或签板\n2）用千份卡表测试量胶袋厚度，厚度一般要求≥0.05mm或按QC检验规格或/和産品安全条例" } ],
-            "吸塑罩": [ { id: 1, item: "外观", spec: "不能有油污，刮花，水纹，料薄，烂，透明度不够，形状，起骨" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，参照WI-MT-33“吸塑成品控制要求”，厚度要求跟工程资料" }, { id: 3, item: "试装配件", spec: "每批6PCS，可以正常装入配件，不能有无扣位，掉落及罩烂" } ],
-            "吸塑卡": [ { id: 1, item: "外观", spec: "不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污。纸纹，光泽度与签板相符" }, { id: 2, item: "纸质检查", spec: "每批6PCS，纸质对签板，重量不可以超过±10%" }, { id: 3, item: "水分测试", spec: "每批6PCS，量度实际需吸塑的4条边的4个位置，水分检测器垂直插入样板，金属探针通过和接触测试样板，取测量中的最高数值。要求：对裱卡 < 15%；对裱时有E坑纸< 17%" }, { id: 4, item: "试吸塑", spec: "每批6PCS，吸附位置超过总周长的80%以及吸塑到卡纸的涂布层，参照WI-MT-33吸塑控制要求" }, { id: 5, item: "条码检测", spec: "每批6PCS，按顾客要求检测" } ],
+            "吸塑罩": [ { id: 1, item: "外观", spec: "不能有油污，刮花，水纹，料薄，烂，透明度不够，形状，起骨" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，参照内部控制要求，厚度要求跟工程资料" }, { id: 3, item: "试装配件", spec: "每批6PCS，可以正常装入配件，不能有无扣位，掉落及罩烂" } ],
+            "吸塑卡": [ { id: 1, item: "外观", spec: "不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污。纸纹，光泽度与签板相符" }, { id: 2, item: "纸质检查", spec: "每批6PCS，纸质对签板，重量不可以超过±10%" }, { id: 3, item: "水分测试", spec: "每批6PCS，量度实际需吸塑的4条边的4个位置，水分检测器垂直插入样板，金属探针通过和接触测试样板，取测量中的最高数值。要求：对裱卡 < 15%；对裱时有E坑纸< 17%" }, { id: 4, item: "试吸塑", spec: "每批6PCS，吸附位置超过总周长的80%以及吸塑到卡纸的涂布层，参照吸塑控制要求" }, { id: 5, item: "条码检测", spec: "每批6PCS，按顾客要求检测" } ],
             "彩盒": [ { id: 1, item: "外观", spec: "不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污，彩盒光泽度与签板相符" }, { id: 2, item: "纸质检查", spec: "每批6PCS，纸纹纸质与签板相符，将彩盒屈90判断纸纹方向，顺纹易屈折，逆纹较困难。重量不能超过±10%" }, { id: 3, item: "条码检测", spec: "每批6PCS，按顾客要求检测" } ],
             "印刷内卡": [ { id: 1, item: "外观", spec: "对签板，不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污" } ],
             "说明书": [ { id: 1, item: "外观", spec: "对签板，图案和字唛不能印刷模糊。" } ],
             "贴纸": [ { id: 1, item: "外观", spec: "外观：图案顔色及裁边对签板" }, { id: 2, item: "粘性测试", spec: "每批6PCS，试粘贴纸在産品上或在指定的工具上，用810胶纸粘起贴纸，胶件能存留贴纸3/4为合格" }, { id: 3, item: "老化测试", spec: "每批6PCS，根据QE指示或有特殊要求的" } ],
-            "卡通箱": [ { id: 1, item: "外观", spec: "外观：印刷顔色和字体，尺寸和重量单位公英制与箱唛相符。不能烂，污糟，油污及接口粘合不良。纸质和坑纹箱唛相符" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，箱唛尺寸同纸箱尺寸相符，不能超过±1/8\"" }, { id: 3, item: "条码检测", spec: "每批6PCS，按顾客要求检测，条码线条清晰不能有印刷不良" }, { id: 4, item: "材料测试", spec: "美泰产品按供应商每3个月提供一份合格的ECT测试报告(按美泰QSOP4363/GQMP2401最新版要求提供报告，双坑箱豁免此要求)。" } ],
+            "卡通箱": [ { id: 1, item: "外观", spec: "外观：印刷顔色和字体，尺寸和重量单位公英制与箱唛相符。不能烂，污糟，油污及接口粘合不良。纸质和坑纹箱唛相符" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，箱唛尺寸同纸箱尺寸相符，不能超过±1/8\"" }, { id: 3, item: "条码检测", spec: "每批6PCS，按顾客要求检测，条码线条清晰不能有印刷不良" }, { id: 4, item: "材料测试", spec: "客户产品按供应商每3个月提供一份合格的ECT测试报告(按客户指定检验规范最新版要求提供报告，双坑箱豁免此要求)。" } ],
             "包材其他": [ { id: 1, item: "外观", spec: "对签板，不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污" } ]
         };
 
         // 🔑 核心权限控制：双击激活主管模式，解锁打印和审批修改权
         function activateSupervisorMode() {
             if (isSupervisorMode) { alert("主管模式已激活，无需重复操作。"); return; }
-            const pwd = prompt("请输入 IQC 主管鉴权密码以解锁审批权限：");
-            if (pwd === "ABC123456") {
+            // 💡 GitHub 开源脱敏：修改了鉴权密码，并在弹窗中提示
+            const pwd = prompt("请输入 IQC 主管鉴权密码 (GitHub演示密码为 123456)：");
+            if (pwd === "123456") {
                 isSupervisorMode = true;
                 document.getElementById('roleBadge').style.display = 'inline-block';
                 
@@ -497,8 +511,9 @@
 
         function triggerImportFileInput() { document.getElementById('importRecordsFile').click(); }
 
-        function loadDatabaseFromStorage() { const raw = localStorage.getItem('MATTEL_STABLE_DB_V150'); if (raw) { try { dbRecords = JSON.parse(raw); } catch(e) { dbRecords = []; } } }
-        function saveDatabaseToStorage() { localStorage.setItem('MATTEL_STABLE_DB_V150', JSON.stringify(dbRecords)); }
+        // 💡 GitHub 开源脱敏：修改了本地存储的 Key
+        function loadDatabaseFromStorage() { const raw = localStorage.getItem('IQC_STABLE_DB_OPEN'); if (raw) { try { dbRecords = JSON.parse(raw); } catch(e) { dbRecords = []; } } }
+        function saveDatabaseToStorage() { localStorage.setItem('IQC_STABLE_DB_OPEN', JSON.stringify(dbRecords)); }
 
         // ==================== 🛠️ 智能双向合并引擎 (Smart Merge) ====================
         function importRecords(e) {
@@ -513,7 +528,7 @@
                             if(!exists) supplierDatabase.push(impSup);
                             else exists.level = impSup.level; 
                         });
-                        localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase));
+                        localStorage.setItem('IQC_SUPPLIER_DB_OPEN', JSON.stringify(supplierDatabase));
                     }
                     
                     if (imported && (Array.isArray(imported.records) || Array.isArray(imported))) {
@@ -535,11 +550,21 @@
         }
 
         function initSupplierDatabase() {
-            const localSrc = localStorage.getItem('MATTEL_SUPPLIER_DB_V140');
-            if (localSrc) { try { supplierDatabase = JSON.parse(localSrc); } catch(e) { supplierDatabase = []; } } 
-            else { supplierDatabase = []; localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase)); }
+            const localSrc = localStorage.getItem('IQC_SUPPLIER_DB_OPEN');
+            if (localSrc) { 
+                try { 
+                    supplierDatabase = JSON.parse(localSrc); 
+                    defaultSuppliers.forEach(ds => {
+                        if (!supplierDatabase.find(s => s.code === ds.code)) {
+                            supplierDatabase.push(ds);
+                        }
+                    });
+                } catch(e) { supplierDatabase = [...defaultSuppliers]; } 
+            } 
+            else { supplierDatabase = [...defaultSuppliers]; localStorage.setItem('IQC_SUPPLIER_DB_OPEN', JSON.stringify(supplierDatabase)); }
             refreshSupplierDatalists();
         }
+
         function refreshSupplierDatalists() {
             const codeList = document.getElementById('supplierCodeList'); const nameList = document.getElementById('supplierNameList');
             if(!codeList || !nameList) return;
@@ -567,7 +592,7 @@
             if (!code || !name) return;
             const existingIndex = supplierDatabase.findIndex(s => s.code.toLowerCase() === code.toLowerCase() || s.name.toLowerCase() === name.toLowerCase());
             if (existingIndex !== -1) { supplierDatabase[existingIndex].level = assignedLevel; } else { supplierDatabase.push({ code: code, name: name, level: assignedLevel }); }
-            localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase)); refreshSupplierDatalists();
+            localStorage.setItem('IQC_SUPPLIER_DB_OPEN', JSON.stringify(supplierDatabase)); refreshSupplierDatalists();
         }
 
         function updateSubCategories() {
@@ -629,7 +654,7 @@
             });
 
             const newRecord = {
-                id: "MAT_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+                id: "IQC_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
                 poNo: document.getElementById('poNo').value, deliveryDateTs: parseToTimestamp(document.getElementById('deliveryDate').value), 
                 supplierCode: sCode, supplierName: sName, csLevel: assignedLevel, materialCategoryCode: catCode, materialCategory: categoryLabelMap[catCode] || catCode,
                 materialTypeRule: subCatVal, materialNo: document.getElementById('materialNo').value, materialName: document.getElementById('materialName').value,
@@ -706,7 +731,6 @@
             document.getElementById('mApprovalDate').value = rec.physicalReport.approvalDate;
             document.getElementById('mApprovalNotes').value = rec.physicalReport.approvalNotes || "";
 
-            // 🌟🌟🌟 v1.5 全端闭环打印修复逻辑 🌟🌟🌟
             const isPending = rec.physicalReport.approvalStatus === "待审批";
             
             if (isSupervisorMode) {
@@ -986,6 +1010,7 @@
             document.getElementById('selectAll').checked = false;
         }
 
+        // 💡 GitHub 开源脱敏：修改了导出的 JSON 前缀，移除商业信息
         function exportSelectedRecordsToJSON() {
             const checkboxes = document.querySelectorAll('.row-select:checked');
             if (checkboxes.length === 0) { alert("🚨 请先在台账左侧勾选您想要单独导出来货的批次！"); return; }
@@ -1005,11 +1030,12 @@
                 const url = URL.createObjectURL(blob); 
                 const a = document.createElement('a');
                 a.href = url; 
-                a.download = `${prefix}-${dateStr}-${timeStr}.json`; 
+                a.download = `IQC_${prefix}_${dateStr}_${timeStr}.json`; 
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
             } catch (err) { alert("勾选批次导出失败: " + err.message); }
         }
 
+        // 💡 GitHub 开源脱敏：修改了导出的备份文件名前缀
         function exportRecords() {
             try {
                 const packageData = { suppliers: supplierDatabase || [], records: dbRecords || [] };
@@ -1019,7 +1045,7 @@
                 
                 const dateStr = getFormattedDateOnly();
                 const timeStr = getFormattedTimeOnly();
-                a.download = `Mattel_Integrated_DB_Backup_${dateStr}_${timeStr}.json`; 
+                a.download = `IQC_Integrated_DB_Backup_${dateStr}_${timeStr}.json`; 
                 
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
             } catch (err) { alert("JSON备份导出失败: " + err.message); }
@@ -1062,7 +1088,8 @@
             });
             const worksheet = XLSX.utils.json_to_sheet(excelRows); const workbook = XLSX.utils.book_new(); 
             XLSX.utils.book_append_sheet(workbook, worksheet, "综合质量管理台账");
-            XLSX.writeFile(workbook, `Mattel_Comprehensive_Ledger_${getFormattedDateOnly()}_${getFormattedTimeOnly()}.xlsx`);
+            // 💡 GitHub 开源脱敏：修改了导出的 Excel 文件名前缀
+            XLSX.writeFile(workbook, `IQC_Comprehensive_Ledger_${getFormattedDateOnly()}_${getFormattedTimeOnly()}.xlsx`);
         }
 
         function toggleTheme() { const root = document.documentElement; root.getAttribute('data-theme') === 'dark' ? root.removeAttribute('data-theme') : root.setAttribute('data-theme', 'dark'); }
