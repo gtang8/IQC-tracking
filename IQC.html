@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美泰 IQC 进料检验与追踪系统 v1.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* 🖥️ 网页端：默认隐藏打印专用的流式文本块 */
+        #printRemarksBlock, #printApprovalNotesBlock { display: none; }
+        
+        /* 🔒 核心权限隔离：默认状态下，主管的审批区域和相关打印按钮绝对隐藏，通过JS动态控制 */
+        .approval-area { margin-top: 15px; border: 2px solid #28a745; border-radius: 5px; padding: 12px; background: rgba(40, 167, 69, 0.05); display: none; }
+        .btn-print-approval { display: none; background-color: #8e44ad; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-print-approval:hover { background-color: #732d91; }
+
+        @media print {
+            html, body { height: auto !important; min-height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+            body > *:not(#physicsModal) { display: none !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; border: none !important; }
+            #physicsModal { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; display: block !important; background: #ffffff !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; box-shadow: none !important; z-index: 99999 !important; }
+            
+            .modal-container { 
+                width: 98% !important; max-width: 98% !important; height: auto !important; border: none !important; box-shadow: none !important; 
+                font-size: 10px !important; line-height: 1.2 !important; position: static !important; overflow: visible !important; 
+                background: #ffffff !important; padding: 10px !important; margin: 0 auto !important; box-sizing: border-box !important;
+            }
+            .modal-body { overflow: visible !important; margin-top: 4px !important; padding: 0 !important; height: auto !important; max-height: none !important; }
+            .modal-footer, .btn, .modal-close-x { display: none !important; }
+            th::after { display: none !important; content: "" !important; }
+
+            input::placeholder, textarea::placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; opacity: 0 !important; content: "" !important; }
+            input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; -webkit-text-fill-color: transparent !important; opacity: 0 !important; }
+            input:-moz-placeholder, textarea:-moz-placeholder { color: transparent !important; opacity: 0 !important; }
+            input::-moz-placeholder, textarea::-moz-placeholder { color: transparent !important; opacity: 0 !important; }
+            input:-ms-input-placeholder, textarea:-ms-input-placeholder { color: transparent !important; opacity: 0 !important; }
+
+            input[type="text"], input[type="number"], input[type="date"], select, textarea { border: none !important; border-bottom: 1px solid #000000 !important; font-size: 1.05em !important; font-weight: bold !important; padding: 0 2px !important; width: auto !important; background: transparent !important; color: #000000 !important; display: inline-block !important; }
+            select { appearance: none !important; -webkit-appearance: none !important; }
+            #modalTitle { font-size: 1.15em !important; margin: 0 0 4px 0 !important; padding-bottom: 2px !important; color: #000000 !important; border-bottom: 1px solid #000000 !important; }
+            
+            .modal-meta-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0 !important; width: 100% !important; background: transparent !important; border: 1px solid #000000 !important; padding: 0 !important; margin-bottom: 4px !important; }
+            .modal-meta-grid > div { display: block !important; width: auto !important; padding: 4px 6px !important; box-sizing: border-box !important; border: 1px solid #000000 !important; font-size: 10px !important; vertical-align: top !important; white-space: normal !important; word-break: break-all !important; }
+            .modal-meta-grid input[type="number"] { width: 40px !important; border: none !important; border-bottom: 1px solid #000000 !important; text-align: center !important; }
+            .re-auto-badge { border: none !important; background: transparent !important; padding: 0 !important; color: #000000 !important; font-weight: bold !important; }
+            
+            .physics-input-table { width: 100% !important; box-sizing: border-box !important; border-collapse: collapse !important; }
+            .physics-input-table th { background: #f0f0f0 !important; border: 1px solid #000000 !important; font-size: 11px !important; padding: 2px !important; color: #000000 !important; text-align: center !important; font-weight: bold !important; }
+            .physics-input-table td { border: 1px solid #000000 !important; font-size: 11px !important; padding: 2px !important; line-height: 1.15 !important; color: #000000 !important; }
+            .physics-input-table input { border: none !important; font-weight: bold !important; color: #000000 !important; width: 100% !important; text-align: center !important; background: transparent !important; }
+            
+            /* 🖨️ 打印时隐藏原生 textarea，显示定高平铺块，严格固定为 8 行 */
+            #mNotes, #mApprovalNotes { display: none !important; }
+            #printRemarksBlock { 
+                display: block !important; width: 100% !important; height: 160px !important; min-height: 160px !important; max-height: 160px !important; 
+                line-height: 20px !important; overflow: hidden !important; font-size: 1.05em !important; border: 1px solid #000000 !important; 
+                margin-top: 2px !important; box-sizing: border-box !important; white-space: pre-wrap !important; 
+            }
+            
+            /* 打印态下审批区域样式，随JS的 display 控制自动显示隐藏 */
+            .approval-area { border: 2px solid #000000 !important; background: transparent !important; padding: 8px !important; margin-top: 10px !important; }
+            
+            #printApprovalNotesBlock {
+                display: block !important; width: 100% !important; height: auto !important; min-height: 40px !important;
+                border: 1px solid #000000 !important; padding: 5px !important; margin-top: 2px !important; box-sizing: border-box !important; white-space: pre-wrap !important;
+            }
+            .approval-area label, .approval-area strong { color: #000000 !important; }
+            div[style*="background: rgba(230, 126, 34, 0.08)"] { display: block !important; margin-top: 4px !important; padding: 4px !important; background: transparent !important; border: 1px solid #000000 !important; }
+        }
+
+        :root {
+            --bg-color: #f4f6f9; --card-bg: #ffffff; --text-color: #333333; --border-color: #cccccc;
+            --primary-color: #007bff; --primary-hover: #0056b3; --danger-color: #dc3545;
+            --warning-color: #ffc107; --success-color: #28a745; --excel-color: #1f7246;
+            --excel-hover: #154c2e; --physics-color: #e67e22; --physics-hover: #d35400;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212; --card-bg: #1e1e1e; --text-color: #e0e0e0; --border-color: #444444;
+            --primary-color: #375a7f; --primary-hover: #2b4764;
+        }
+
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; flex-wrap: wrap; gap: 15px; }
+        .header-title-area { display: flex; flex-direction: column; }
+        
+        .header-title-area h2 { margin: 0; font-size: 1.5em; cursor: pointer; user-select: none; transition: color 0.2s; }
+        .header-title-area h2:hover { color: var(--primary-color); }
+        
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; transition: background-color 0.2s; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-excel { background-color: var(--excel-color); color: white; }
+        .btn-excel:hover { background-color: var(--excel-hover); }
+        .btn-physics { background-color: var(--physics-color); color: white; }
+        .btn-physics:hover { background-color: var(--physics-hover); }
+
+        .btn-theme-toggle { padding: 8px 12px; background-color: #6c757d; color: white; font-size: 1.1em; border-radius: 4px; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-theme-toggle:hover { background-color: #5a6268; transform: scale(1.05); }
+
+        /* 审批流状态按钮颜色 */
+        .btn-p-wait { background-color: #6c757d !important; color: white !important; width: 140px; } 
+        .btn-p-pending { background-color: #17a2b8 !important; color: white !important; width: 140px; border: 2px solid #117a8b !important; } 
+        .btn-p-pass { background-color: #28a745 !important; color: white !important; width: 140px; } 
+        .btn-p-fail { background-color: #dc3545 !important; color: white !important; width: 140px; } 
+        .btn-p-aod { background-color: #e67e22 !important; color: white !important; width: 140px; border: 2px dashed #d35400 !important; } 
+
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-grid label { margin-bottom: 5px; font-size: 0.9em; font-weight: bold; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--card-bg); color: var(--text-color); }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; }
+        td { text-align: left; font-size: 0.85em; }
+        th { background-color: rgba(0,0,0,0.08); cursor: pointer; user-select: none; position: relative; text-align: center; font-size: 0.85em; padding: 10px 18px 10px 18px; }
+        th:hover { background-color: rgba(0,0,0,0.15); }
+        th::after { content: " ⇅"; position: absolute; right: 4px; color: #999; }
+
+        .year-group-header { background-color: #d1ecf1 !important; color: #0c5460; font-weight: bold; font-size: 1.05em; cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        .year-group-header:hover { background-color: #bee5eb !important; }
+        [data-theme="dark"] .year-group-header { background-color: #17a2b8 !important; color: #fff; }
+
+        .month-group-header { background-color: #e9ecef !important; color: #2c3e50; font-weight: bold; font-size: 0.95em; cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        .month-group-header:hover { background-color: #dee2e6 !important; }
+        [data-theme="dark"] .month-group-header { background-color: #2c3e50 !important; color: #fff; }
+
+        .row-red { background-color: rgba(220, 53, 69, 0.12) !important; color: var(--text-color); }
+        .row-orange { background-color: rgba(255, 193, 7, 0.15) !important; color: var(--text-color); }
+        .row-green { background-color: rgba(40, 167, 69, 0.12) !important; color: var(--text-color); }
+
+        .editable-date-cell { background-color: rgba(0, 86, 179, 0.05); cursor: pointer; font-weight: bold; border-bottom: 2px dashed var(--primary-color) !important; }
+        .editable-cell { background-color: rgba(40, 167, 69, 0.05); cursor: pointer; font-weight: bold; border-bottom: 2px dashed var(--success-color) !important; }
+        .absolute-locked-cell { background-color: #e9ecef !important; color: #6c757d !important; cursor: not-allowed !important; font-style: italic; border: 1px solid var(--border-color) !important; }
+
+        .hidden-file-input { display: none !important; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-container { background: var(--card-bg); width: 93%; max-width: 1150px; max-height: 93vh; border-radius: 8px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; color: var(--text-color); border: 1px solid var(--border-color); position: relative; }
+        
+        .modal-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--physics-color); padding-bottom: 8px; margin-top: 0; gap: 15px; }
+        .modal-close-x { font-size: 28px; font-weight: bold; color: #aaaaaa; cursor: pointer; line-height: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s; user-select: none; flex-shrink: 0; margin-left: auto; }
+        .modal-close-x:hover { background-color: #e74c3c; color: white; }
+        .modal-body { overflow-y: auto; margin-top: 15px; flex: 1; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        
+        .modal-meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 5px; font-size: 0.86em; line-height: 1.5; }
+        .modal-meta-grid > div { white-space: normal; word-break: break-all; }
+        .modal-meta-grid input[type="text"], .modal-meta-grid input[type="number"], .modal-meta-grid input[type="date"], .modal-meta-grid select { padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color); width: 85%; }
+        .modal-meta-grid .aql-fixed-label { color: #2c3e50; font-weight: bold; background: #eee; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc; display: inline-block; }
+        .modal-meta-grid .aql-fixed-lock { color: #c0392b; font-weight: bold; background: rgba(192,57,43,0.04); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(192,57,43,0.15); display: inline-block; }
+
+        .physics-input-table { width: 100%; border-collapse: collapse; }
+        .physics-input-table th { font-size: 0.82em; padding: 8px 4px; text-align: center; }
+        .physics-input-table input[type="text"], .physics-input-table input[type="number"] { width: 90%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color); }
+        .physics-input-table select { padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color); }
+
+        .modal-remarks-area { width: 100%; min-height: 60px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color); font-family: inherit; font-size: 0.9em; resize: vertical; }
+        
+        .toast-msg { display: none; color: var(--success-color); font-weight: bold; margin-left: 10px; align-items: center; }
+        
+        .role-badge { display: none; font-size: 0.7em; background: #e74c3c; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
+        .role-badge.active-role { display: inline-block; animation: flashBadge 2s infinite; }
+        @keyframes flashBadge { 0% {opacity: 1;} 50% {opacity: 0.6;} 100% {opacity: 1;} }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title-area">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkwIiBmaWxsPSIjRTIyMDI3Ii8+PHRleHQgeD0iMTAwIiB5PSIxMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQyIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBsZXR0ZXItc3BhY2luZz0iLTEiPk1BVFRFTDwvdGV4dD48L3N2Zz4=" alt="Mattel Logo" style="height: 38px;">
+                <h2 ondblclick="activateSupervisorMode()" style="margin: 0;">美泰 IQC 进料检验与追踪系统 v1.0 <span id="roleBadge" class="role-badge">主管模式激活</span></h2>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 导出全量 Excel</button>
+            <button class="btn btn-success" onclick="exportRecords()">📤 导出 JSON 备份</button>
+            <button class="btn btn-primary" onclick="triggerImportFileInput()">📥 智能导入/合并 JSON</button>
+            <input type="file" id="importRecordsFile" class="hidden-file-input" accept=".json" onchange="importRecords(event)">
+            <button class="btn-theme-toggle" onclick="toggleTheme()" title="切换暗黑模式">🌓</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>1. 新来料批次输入与智能拦截判定</h3>
+        <form id="recordForm" onsubmit="event.preventDefault();">
+            <div class="form-grid">
+                <div class="form-group"><label>送货单号 (Mã đơn hàng PO)</label><input type="text" id="poNo" required></div>
+                <div class="form-group"><label>交货日期 (Ngày nhận hàng)</label><input type="date" id="deliveryDate" required onchange="evaluateTestingRequirement()"></div>
+                <div class="form-group"><label style="color:#007bff;">供应商代码 (Mã nhà cung cấp) 🔍</label><input type="text" id="supplierCode" list="supplierCodeList" required oninput="handleSupplierCodeInput()" placeholder="请键入或选择代码"><datalist id="supplierCodeList"></datalist></div>
+                <div class="form-group"><label style="color:#007bff;">供应商名称 (Tên nhà cung cấp) 🔍</label><input type="text" id="supplierName" list="supplierNameList" required oninput="handleSupplierNameInput()" placeholder="请键入或选择名称"><datalist id="supplierNameList"></datalist></div>
+                <div class="form-group"><label style="color:#28a745;">美泰供应商等级 (Cấp nhà cung cấp Mattel)</label>
+                    <select id="csLevel" onchange="evaluateTestingRequirement()" style="font-weight: bold;">
+                        <option value="A/B级">A/B级 (常规/低风险)</option>
+                        <option value="C级">C级 (中频监控)</option>
+                        <option value="非指定">非指定 (每批必检)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>物料大类 (Phân loại lớn vật liệu)</label>
+                    <select id="materialCategory" onchange="updateSubCategories(); evaluateTestingRequirement();" required>
+                        <option value="">-- 请选择大类 --</option>
+                        <option value="HARD_PLASTIC">硬胶类 (Nhựa cứng)</option>
+                        <option value="SOFT_PLASTIC">软胶类 (Nhựa mềm)</option>
+                        <option value="COATING">表面涂层 (Lớp phủ bề mặt)</option>
+                        <option value="METAL">五金 (Kim khí)</option>
+                        <option value="PIGMENT">色粉 (Bột màu)</option>
+                        <option value="SOLVENT">溶剂 (Dung môi)</option>
+                        <option value="STICKER">贴纸/彩卡 (Nhãn dán / Thẻ màu)</option>
+                        <option value="PACKAGING">包材 (Bao bì)</option>
+                        <option value="ELECTRONIC">电子物料 (Linh kiện điện tử)</option>
+                        <option value="FABRIC">织物/皮革 (Vải / Da)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>物料细类 (Loại vật liệu chi tiết)</label>
+                    <select id="materialTypeRule" onchange="evaluateTestingRequirement();" required>
+                        <option value="">-- 请先选择大类 --</option>
+                    </select>
+                </div>
+                <div class="form-group"><label style="color:#007bff;">物料编号 (Mã vật liệu)</label><input type="text" id="materialNo" required oninput="evaluateTestingRequirement()"></div>
+                <div class="form-group"><label>物料名称 (Tên vật liệu)</label><input type="text" id="materialName" required></div>
+                <div class="form-group"><label id="lblReportDate">报告日期 (Ngày báo cáo)</label><input type="date" id="reportDate" onchange="evaluateTestingRequirement()"></div>
+                <div class="form-group"><label id="lblTestReportNo">化验报告编号 (Mã báo cáo)</label><input type="text" id="testReportNo" placeholder="暂无报告可留空"></div>
+                <div class="form-group"><label>触及 (Tiếp cận)</label><select id="accessible"><option value="触及" selected>触及 / 进行 tiếp cận</option><option value="非触及">非触及 / 不进行 tiếp cận</option></select></div>
+                <div class="form-group"><label>保留 (Bảo lưu)</label><select id="retained"><option value="保留" selected>保留 / 保留</option><option value="非保留">非保留 / 不保留</option></select></div>
+                <div class="form-group"><label>涂层 (Lớp phủ)</label><select id="coated"><option value="非涂层" selected>非涂层 / 无涂层</option><option value="涂层">涂层 / 有涂层</option></select></div>
+                <div class="form-group"><label>包装/产品 (Đóng gói / 成品)</label><select id="pkgProd"><option value="产品" selected>产品 / Thành phẩm</option><option value="包装">包装 / Đóng gói</option></select></div>
+                <div class="form-group"><label>批次号 (Số lô)</label><input type="text" id="lotNo" required></div>
+                <div class="form-group"><label style="color:#28a745;">数量 (Số lượng) 🔢</label><input type="number" id="qty" step="any" min="0" required placeholder="只允许输入数字"></div>
+                <div class="form-group"><label style="color:#28a745;">单位 (Đơn vị)</label>
+                    <select id="unit" required>
+                        <option value="个">个 / Cái</option>
+                        <option value="千克">千克 / Kg</option>
+                        <option value="吨">吨 / Tấn</option>
+                        <option value="克">克 / Ghi-gam</option>
+                        <option value="桶/罐">桶/罐 / Thùng/Lon</option>
+                        <option value="包">包 / Bao</option>
+                    </select>
+                </div>
+            </div>
+            <div id="statusResult" class="status-box"></div>
+            <div class="actions-bar">
+                <button type="button" class="btn btn-primary" onclick="addRecord()">保存批次入库 (Lưu lô hàng & 初始化物理报告)</button>
+                <button type="button" class="btn btn-secondary" onclick="fullResetForm()">重置表单 (Đặt lại)</button>
+                <span id="toastMsg" class="toast-msg">✅ 批次已安全入库！</span>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>2. 本地测试历史管理台账 (检验员发往主管审批 / 主管批复回传)</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-danger" onclick="deleteSelectedRecords()">批量安全删除选中行</button>
+            <button class="btn btn-physics" style="background-color: #17a2b8;" onclick="exportSelectedRecordsToJSON()">📤 提取导出 [选中行 JSON] 用于协同</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="3%" style="cursor:default; background:rgba(0,0,0,0.05);"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+                        <th onclick="sortTable('poNo')">PO单号<br>(Mã PO)</th>
+                        <th onclick="sortTable('deliveryDateTs')">交货日期<br>(Ngày giao)</th>
+                        <th onclick="sortTable('supplierCode')">供应商代码<br>(Mã NCC)</th>
+                        <th onclick="sortTable('supplierName')">供应商名称<br>(Tên NCC)</th>
+                        <th onclick="sortTable('csLevel')">供应商等级<br>(Cấp NCC)</th>
+                        <th onclick="sortTable('materialCategory')">物料大类<br>(Phân loại lớn)</th>
+                        <th onclick="sortTable('materialNo')">物料编号<br>(Mã vật liệu)</th>
+                        <th onclick="sortTable('materialName')">物料名称<br>(Tên vật liệu)</th>
+                        <th onclick="sortTable('reportDateTs')">化学报告日期<br>(Ngày BC hóa学)</th>
+                        <th onclick="sortTable('testReportNo')">化验报告编号<br>(Mã báo cáo)</th>
+                        <th onclick="sortTable('qty')">数量<br>(Số lượng)</th>
+                        <th onclick="sortTable('unit')">单位<br>(Đơn vị)</th>
+                        <th onclick="sortTable('decision')">化学频次判定<br>(Trạng thái)</th>
+                        <th onclick="sortTable('physicalStatus')" style="color: var(--physics-color);">物理检验与审批窗口<br>(Kiểm tra & Phê duyệt)</th>
+                    </tr>
+                </thead>
+                <tbody id="recordTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== 物理检验与审批模态窗 ==================== -->
+    <div id="physicsModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header-wrapper">
+                <h2 id="modalTitle" style="margin: 0; color: var(--physics-color); flex: 1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <span>IQC 物理检验与审批窗 (Kiểm tra vật lý & Phê duyệt)</span>
+                    <span style="font-size: 0.6em; color: #555; font-weight: normal; background: #e9ecef; padding: 4px 10px; border-radius: 4px; border: 1px dashed #ccc; margin-right: 15px;">
+                        报告编号 (Mã BC): <strong id="mReportNoShow" style="color:var(--primary-color);">自动生成中...</strong>
+                    </span>
+                </h2>
+                <div class="modal-close-x" onclick="closePhysicsModal()">&times;</div>
+            </div>
+            <div class="modal-meta-grid" style="margin-top:15px;">
+                <div><strong>送货单号 (PO / Mã PO):</strong> <span id="mMetaPo"></span></div>
+                <div><strong>物料编码 (Mã vật liệu):</strong> <span id="mMetaItemCode"></span></div>
+                <div><strong>物料名称 (Tên vật liệu):</strong> <span id="mMetaItemName"></span></div>
+                <div><strong>供应商 (Nhà cung cấp):</strong> <span id="mMetaSupplier"></span></div>
+                <div><strong>批次号 (Lot No / Số lô):</strong> <span id="mMetaLot"></span></div>
+                <div><strong>到货数量 (Số lượng hàng về):</strong> <span id="mMetaQty"></span></div>
+                <div style="display: flex; align-items: center; gap: 5px;"><strong>检验日期 (Ngày kiểm tra):</strong> <input type="date" id="mInspDate" style="padding: 4px; border: 1px solid var(--border-color); border-radius: 4px;"></div>
+                <div style="display: flex; align-items: center; gap: 5px;"><strong>检验员 (Người kiểm tra):</strong>
+                    <select id="mInspector" style="padding: 4px; font-weight: bold;">
+                        <option value="IQC001">IQC001</option>
+                        <option value="IQC002">IQC002</option>
+                        <option value="IQC003">IQC003</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <strong>总抽样数量<br>(Tổng số mẫu):</strong> 
+                    <input type="number" id="mTotalSampleQty" min="0" placeholder="必填" style="font-weight:bold; width: 75px;">
+                </div>
+                <div><strong>抽样标准 (Tiêu chuẩn):</strong> <span class="aql-fixed-label">AQL Level II</span></div>
+                <div><strong>致命缺陷 (Critical AQL 0):</strong> <span class="aql-fixed-lock">Ac: 0 / Re: 1</span></div>
+                <div style="display: flex; align-items: center; gap: 4px;"><strong>主要缺陷 (Major AQL 0.65):</strong><span>Ac:</span> <input type="number" id="mAcMajor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Major')"><span id="badgeReMajor" class="re-auto-badge">Re: --</span></div>
+                <div style="display: flex; align-items: center; gap: 4px;"><strong>次要缺陷 (Minor AQL 2.5):</strong><span>Ac:</span> <input type="number" id="mAcMinor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Minor')"><span id="badgeReMinor" class="re-auto-badge">Re: --</span></div>
+            </div>
+            <div class="modal-body">
+                <table class="physics-input-table">
+                    <thead>
+                        <tr style="background: rgba(0,0,0,0.06);">
+                            <th width="5%">序号<br>(STT)</th>
+                            <th width="18%">检验项目<br>(Mục kiểm tra)</th>
+                            <th width="38%">技术要求 / 标准规格<br>(Yêu cầu kỹ thuật / Quy cách chuẩn)</th>
+                            <th width="12%" style="color:var(--primary-color);">项目抽样数<br>(Số mẫu mục)</th>
+                            <th width="12%" style="color:var(--primary-color);">项目次品数<br>(Số lỗi mục)</th>
+                            <th width="15%" style="color:var(--primary-color);">实测数据/记录描述<br>(Ghi chép thực tế)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="physicsModalTableBody"></tbody>
+                </table>
+                
+                <div style="margin-top: 15px; display: flex; align-items: center; gap: 15px; background: rgba(230, 126, 34, 0.08); padding: 12px; border-radius: 5px;">
+                    <label style="font-weight: bold; color: var(--physics-color);">📊 检验员提交初判 (Quyết định sơ bộ):</label>
+                    <select id="mFinalResult" style="font-weight: bold; padding: 6px 12px;">
+                        <option value="待判定">⏳ 待判定 (Chưa quyết định)</option>
+                        <option value="合格 (Pass)">✅ 检验合格 (Pass)</option>
+                        <option value="不合格 (Fail)">❌ 检验不合格 (Fail)</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label style="font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px; color:#2c3e50;">📝 检验员备注 / 现场异常描述 (Ghi chú kiểm tra):</label>
+                    <textarea id="mNotes" class="modal-remarks-area" placeholder="检验员可在此处追加详细描述... / Nhập ghi chú hoặc mô tả bất thường cụ thể tại đây..."></textarea>
+                    <div id="printRemarksBlock"></div>
+                </div>
+
+                <!-- 👨‍💼 主管审批区 -->
+                <div id="supervisorArea" class="approval-area">
+                    <label style="font-weight: bold; color: #28a745; font-size: 1.1em;">✍️ IQC 主管最终审批区 (Khu vực phê duyệt của quản lý):</label>
+                    
+                    <div style="margin-top: 10px; margin-bottom: 12px;">
+                        <strong>审批备注 (Ghi chú phê duyệt):</strong>
+                        <textarea id="mApprovalNotes" style="width: 100%; min-height: 45px; padding: 6px; margin-top: 5px; border: 1px solid #28a745; border-radius: 4px;" placeholder="主管可在此填写特采原因、退货说明或任何审批意见..." disabled></textarea>
+                        <div id="printApprovalNotesBlock"></div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <strong>审批结论 (Kết luận):</strong><br>
+                            <select id="mApprovalStatus" style="width: 100%; padding: 6px; font-weight: bold; margin-top: 4px; border: 1px solid #28a745; border-radius: 4px;" disabled>
+                                <option value="待审批">⏳ 待审批 (Chờ phê duyệt)</option>
+                                <option value="同意接收 (Approved)">✅ 同意接收 (Approved/Pass)</option>
+                                <option value="特采接收 (AOD)">⚠️ 特采接收 (AOD)</option>
+                                <option value="拒收退货 (Rejected)">❌ 拒收退货 (Rejected)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <strong>主管电子签名 (Chữ ký):</strong><br>
+                            <select id="mApproverName" style="width: 100%; padding: 6px; font-weight: bold; margin-top: 4px; border: 1px solid #28a745; border-radius: 4px;" disabled>
+                                <option value="QC主管" selected>QC主管</option>
+                                <option value="QA经理">QA经理</option>
+                            </select>
+                        </div>
+                        <div>
+                            <strong>审批日期 (Ngày duyệt):</strong><br>
+                            <input type="date" id="mApprovalDate" style="width: 100%; padding: 5px; margin-top: 4px; border: 1px solid #28a745; border-radius: 4px;" disabled>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" style="background-color: #27ae60;" onclick="savePhysicsModalData()">💾 仅保存数据 (Lưu vào DB)</button>
+                <button id="btnPrintApproval" class="btn-print-approval" onclick="printPhysicalReportToPDF()">🖨️ 打印最终审批报告 (In PDF)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局底层基础静态数据链 ====================
+        let supplierDatabase = []; let dbRecords = []; let sortDirections = {}; let currentSortField = null; let currentActiveRecordIdForPhysics = null; 
+        let collapsedYearsState = {}; let collapsedMonthsState = {};
+
+        // 🔒 全局控制标识
+        let isSupervisorMode = false;
+
+        const unitTranslationMap = { "个": "个 / Cái", "千克": "千克 / Kg", "吨": "吨 / Tấn", "克": "克 / Ghi-gam", "桶/罐": "桶/罐 / Thùng/Lon", "包": "包 / Bao" };
+        
+        const subCategoryMap = {
+            "HARD_PLASTIC": ["PP","POM","PET","ABS","Nylon","PBT","PS","PE","SBC","其他"],
+            "SOFT_PLASTIC": ["PVC","TPR","TPU","EVA","橡胶 (Cao su)","其他"],
+            "COATING": ["油漆/墨水/清漆 (Sơn / Mực in / Sơn bóng)","粉末涂层/染料","装饰件表面涂层","其他"],
+            "METAL": ["螺线 (Ốc vít)","铁轴 (Trục sắt)","弹簧 (Lò xo)","T钉 (Đinh chữ T)","其他"],
+            "PIGMENT": ["干粉 (Bột khô)","色母 (Hạt màu)","其他"],
+            "SOLVENT": ["胶水 (Keo)","稀释剂 (Chất pha loãng)","其他"],
+            "STICKER": ["贴纸 (Nhãn dán)","彩卡 (Thẻ màu)","其他"],
+            "PACKAGING": ["胶袋", "吸塑罩", "吸塑卡", "彩盒", "印刷内卡", "说明书", "贴纸", "卡通箱", "其他"],
+            "ELECTRONIC": ["普通电池", "纽扣电池", "PCBA", "喇叭", "电线", "LED", "锡线", "开关", "其他"],
+            "FABRIC": ["布 (Vải)","纺织品","皮革","其他"]
+        };
+
+        const categoryLabelMap = {
+            "HARD_PLASTIC": "硬胶类 (Nhựa cứng)", "SOFT_PLASTIC": "软胶类 (Nhựa mềm)", "COATING": "表面涂层 (Lớp phủ bề mặt)", "METAL": "五金 (Kim khí)",
+            "PIGMENT": "色粉 (Bột màu)", "SOLVENT": "溶剂 (Dung môi)", "STICKER": "贴纸/彩卡 (Nhãn dán / Thẻ màu)", "PACKAGING": "包材 (Bao bì)", "ELECTRONIC": "电子物料 (Linh kiện)", "FABRIC": "织物/皮革 (Vải / Da)"
+        };
+
+        const physicalSubBlankTemplates = {
+            "硬胶类 (Nhựa cứng)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
+            "软胶类 (Nhựa mềm)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
+            "色粉 (Bột màu)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
+            "表面涂层 (Lớp phủ bề mặt)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致。" }, { id: 2, item: "合规", spec: "CS油漆类，每次来料QC必须检查供应商提供的报告及追溯表是否符合要求" } ],
+            "溶剂 (Dung môi)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致。" }, { id: 2, item: "合规", spec: "CS油漆类，每次来料QC必须检查供应商提供的报告及追溯表是否符合要求" } ],
+            "五金 (Kim khí)": [ { id: 1, item: "外观", spec: "对签板，不能有生锈，氧化，变形及甩电镀层。表面处理一致性（色差、光泽度），机械损伤（划痕、压痕），毛刺/锐边" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，按工程部资料列出的重点控制尺寸。20PCS/每批，所有CTS物件尺寸测量数量数据必须记录于表格上" }, { id: 3, item: "盐雾测试", spec: "每批6PCS，测试后没有氧化或生锈. (头3批每批做测试，之后按供应商每月做一次)" }, { id: 4, item: "拉伸力", spec: "每批6PCS，针对检验规格有列出的物料" }, { id: 5, item: "镀层测试", spec: "每批6PCS，有特殊要求的电镀层做此测试，电镀层没脱落或裂现象（铜片试弯曲90°，铁轴不需试弯曲90°）" } ],
+            "织物/皮革 (Vải / Da)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
+            "贴纸/彩卡 (Nhãn dán / Thẻ màu)": [ { id: 1, item: "外观", spec: "供应商的包装和送货单的物料是否一致" }, { id: 2, item: "合规", spec: "检查报告及追溯表是否符合要求" } ],
+            "普通电池": [ { id: 1, item: "外观", spec: "对签板，电池不可有生锈，变形，氧化及漏电池液现象" }, { id: 2, item: "电压", spec: "每批6pcs，用电压表测试，电压符合要求" }, { id: 3, item: "有效期", spec: "来料时电池(除锂电池外)有效期不能低于2年" }, { id: 4, item: "跌落测试", spec: "每半年6PCS" } ],
+            "纽扣电池": [ { id: 1, item: "外观", spec: "对签板，电池不可有生锈，变形，氧化及漏电池液现象" }, { id: 2, item: "电压", spec: "每批6pcs，用电压表测试，电压符合要求" }, { id: 3, item: "有效期", spec: "来料时电池(除锂电池外)有效期不能低于2年" }, { id: 4, item: "老化测试", spec: "每半年6PCS" } ],
+            "PCBA": [ { id: 1, item: "外观", spec: "对签板，树脂保护层须低于装配空间；金属线与集成电路的焊接位应有树脂保护；焊点符合要求，不能有外来多余锡珠/锡线残留物在PCBA上；用放大镜观察焊点不能有假焊/虚焊现象" }, { id: 2, item: "功能", spec: "每批6PCS，用测试架测试，功能必须符合工程部/和品管部资料" }, { id: 3, item: "试焊接", spec: "每批6PCS，用烙铁和锡线进行焊接测试，不能脱层" } ],
+            "喇叭": [ { id: 1, item: "外观", spec: "对签板，不能有烂，线圈歪，磁石粘不牢，变形及接线口氧化" }, { id: 2, item: "电阻值", spec: "6PCS/每批，用LCR表测试，阻值在工程部资料公差范围内(规格公差±15%)" }, { id: 3, item: "尺寸", spec: "每批6PCS，用卡尺测试，喇叭口径在要求范围内(规格公差±0.5mm); 高度公差±1.0mm" }, { id: 4, item: "功能", spec: "每批6PCS\n1）在喇叭额定电压下， 音频测试仪，扫频范围在200Hz~2000Hz，应无异常声音\n2）调至声源为1000Hz， 麦克风距离喇叭2cm， 测试失真度<5%， （此项针对客户有要求测试）" } ],
+            "电线": [ { id: 1, item: "外观", spec: "对签板，检查尺寸和外观" } ],
+            "LED": [ { id: 1, item: "外观", spec: "对签板，检查外观" }, { id: 2, item: "功能", spec: "万用表检查功能" } ],
+            "锡线": [ { id: 1, item: "外观", spec: "对签板，检查外观和直径，试焊" } ],
+            "开关": [ { id: 1, item: "外观", spec: "对签板，检查尺寸和外观" } ],
+            "电子物料其他": [ { id: 1, item: "外观", spec: "对签板，检查外观，或者工程资料" } ],
+            "胶袋": [ { id: 1, item: "外观", spec: "对签板，不能有封口烂及字体不完整" }, { id: 2, item: "尺寸测量", spec: "1）用直尺测试，胶袋长宽度按QC检验规格或品管部通知或签板\n2）用千份卡表测试量胶袋厚度，厚度一般要求≥0.05mm或按QC检验规格或/和産品安全条例" } ],
+            "吸塑罩": [ { id: 1, item: "外观", spec: "不能有油污，刮花，水纹，料薄，烂，透明度不够，形状，起骨" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，参照WI-MT-33“吸塑成品控制要求”，厚度要求跟工程资料" }, { id: 3, item: "试装配件", spec: "每批6PCS，可以正常装入配件，不能有无扣位，掉落及罩烂" } ],
+            "吸塑卡": [ { id: 1, item: "外观", spec: "不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污。纸纹，光泽度与签板相符" }, { id: 2, item: "纸质检查", spec: "每批6PCS，纸质对签板，重量不可以超过±10%" }, { id: 3, item: "水分测试", spec: "每批6PCS，量度实际需吸塑的4条边的4个位置，水分检测器垂直插入样板，金属探针通过和接触测试样板，取测量中的最高数值。要求：对裱卡 < 15%；对裱时有E坑纸< 17%" }, { id: 4, item: "试吸塑", spec: "每批6PCS，吸附位置超过总周长的80%以及吸塑到卡纸的涂布层，参照WI-MT-33吸塑控制要求" }, { id: 5, item: "条码检测", spec: "每批6PCS，按顾客要求检测" } ],
+            "彩盒": [ { id: 1, item: "外观", spec: "不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污，彩盒光泽度与签板相符" }, { id: 2, item: "纸质检查", spec: "每批6PCS，纸纹纸质与签板相符，将彩盒屈90判断纸纹方向，顺纹易屈折，逆纹较困难。重量不能超过±10%" }, { id: 3, item: "条码检测", spec: "每批6PCS，按顾客要求检测" } ],
+            "印刷内卡": [ { id: 1, item: "外观", spec: "对签板，不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污" } ],
+            "说明书": [ { id: 1, item: "外观", spec: "对签板，图案和字唛不能印刷模糊。" } ],
+            "贴纸": [ { id: 1, item: "外观", spec: "外观：图案顔色及裁边对签板" }, { id: 2, item: "粘性测试", spec: "每批6PCS，试粘贴纸在産品上或在指定的工具上，用810胶纸粘起贴纸，胶件能存留贴纸3/4为合格" }, { id: 3, item: "老化测试", spec: "每批6PCS，根据QE指示或有特殊要求的" } ],
+            "卡通箱": [ { id: 1, item: "外观", spec: "外观：印刷顔色和字体，尺寸和重量单位公英制与箱唛相符。不能烂，污糟，油污及接口粘合不良。纸质和坑纹箱唛相符" }, { id: 2, item: "尺寸测量", spec: "每批6PCS，箱唛尺寸同纸箱尺寸相符，不能超过±1/8\"" }, { id: 3, item: "条码检测", spec: "每批6PCS，按顾客要求检测，条码线条清晰不能有印刷不良" }, { id: 4, item: "材料测试", spec: "美泰产品按供应商每3个月提供一份合格的ECT测试报告(按美泰QSOP4363/GQMP2401最新版要求提供报告，双坑箱豁免此要求)。" } ],
+            "包材其他": [ { id: 1, item: "外观", spec: "对签板，不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污" } ]
+        };
+
+        // 🔑 核心权限控制：双击激活主管模式，解锁打印和审批修改权
+        function activateSupervisorMode() {
+            if (isSupervisorMode) { alert("主管模式已激活，无需重复操作。"); return; }
+            const pwd = prompt("请输入 IQC 主管鉴权密码以解锁审批权限：");
+            if (pwd === "ABC123456") {
+                isSupervisorMode = true;
+                document.getElementById('roleBadge').style.display = 'inline-block';
+                
+                if (currentActiveRecordIdForPhysics) {
+                    document.getElementById('supervisorArea').style.display = "block";
+                    document.getElementById('btnPrintApproval').style.display = "inline-block";
+                    document.getElementById('mApprovalStatus').disabled = false;
+                    document.getElementById('mApproverName').disabled = false;
+                    document.getElementById('mApprovalDate').disabled = false;
+                    document.getElementById('mApprovalNotes').disabled = false;
+                }
+                alert("🟢 鉴权成功！IQC 主管审批功能已完全解封。");
+            } else if (pwd !== null) {
+                alert("🔴 密码错误！您没有审批权限。");
+            }
+        }
+
+        function getFormattedDateOnly() {
+            const now = new Date();
+            const year = now.getFullYear(); 
+            const month = String(now.getMonth() + 1).padStart(2, '0'); 
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}${month}${day}`;
+        }
+
+        function getFormattedTimeOnly() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0'); 
+            const minutes = String(now.getMinutes()).padStart(2, '0'); 
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${hours}${minutes}${seconds}`;
+        }
+
+        function getFormattedSystemTimeNoSeconds() { return `${getFormattedDateOnly()}_${getFormattedTimeOnly()}`; }
+
+        function parseToTimestamp(dateVal) { if (!dateVal) return null; const timestamp = Date.parse(dateVal); return isNaN(timestamp) ? null : timestamp; }
+        function renderComputerDate(timestamp) { if (!timestamp) return ""; return new Date(timestamp).toLocaleDateString(); }
+        function convertToInputFormat(timestamp) { if (!timestamp) return ""; const d = new Date(timestamp); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+        function triggerImportFileInput() { document.getElementById('importRecordsFile').click(); }
+
+        function loadDatabaseFromStorage() { const raw = localStorage.getItem('MATTEL_STABLE_DB_V150'); if (raw) { try { dbRecords = JSON.parse(raw); } catch(e) { dbRecords = []; } } }
+        function saveDatabaseToStorage() { localStorage.setItem('MATTEL_STABLE_DB_V150', JSON.stringify(dbRecords)); }
+
+        // ==================== 🛠️ 智能双向合并引擎 (Smart Merge) ====================
+        function importRecords(e) {
+            const file = e.target.files[0]; if (!file) return; 
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported && Array.isArray(imported.suppliers)) {
+                        imported.suppliers.forEach(impSup => {
+                            const exists = supplierDatabase.find(s => s.code === impSup.code);
+                            if(!exists) supplierDatabase.push(impSup);
+                            else exists.level = impSup.level; 
+                        });
+                        localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase));
+                    }
+                    
+                    if (imported && (Array.isArray(imported.records) || Array.isArray(imported))) {
+                        const importedRecords = imported.records || imported;
+                        let mergeCount = 0; let appendCount = 0;
+                        importedRecords.forEach(newRec => {
+                            const existingIndex = dbRecords.findIndex(r => r.id === newRec.id);
+                            if (existingIndex > -1) { dbRecords[existingIndex] = newRec; mergeCount++; } 
+                            else { dbRecords.push(newRec); appendCount++; }
+                        });
+                        console.log(`Smart Merge 结果: 成功替换 ${mergeCount} 条历史记录，新增 ${appendCount} 条记录。`);
+                    }
+                    forceChainSyncAllRecords(); 
+                    alert("✅ JSON 数据智能合并/还原成功！台账状态已精准同步。");
+                } catch(ex) { alert("JSON解析失败！请检查文件格式。"); }
+            };
+            reader.readAsText(file);
+            e.target.value = ""; 
+        }
+
+        function initSupplierDatabase() {
+            const localSrc = localStorage.getItem('MATTEL_SUPPLIER_DB_V140');
+            if (localSrc) { try { supplierDatabase = JSON.parse(localSrc); } catch(e) { supplierDatabase = []; } } 
+            else { supplierDatabase = []; localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase)); }
+            refreshSupplierDatalists();
+        }
+        function refreshSupplierDatalists() {
+            const codeList = document.getElementById('supplierCodeList'); const nameList = document.getElementById('supplierNameList');
+            if(!codeList || !nameList) return;
+            codeList.innerHTML = ""; nameList.innerHTML = "";
+            supplierDatabase.forEach(sup => {
+                const optCode = document.createElement('option'); optCode.value = sup.code; optCode.textContent = `${sup.name}`; codeList.appendChild(optCode);
+                const optName = document.createElement('option'); optName.value = sup.name; optName.textContent = `代码: ${sup.code}`; nameList.appendChild(optName);
+            });
+        }
+        function autoSyncSupplierLevel(foundSupplier) {
+            const levelSelect = document.getElementById('csLevel');
+            if (levelSelect && foundSupplier && foundSupplier.level) levelSelect.value = foundSupplier.level;
+        }
+        function handleSupplierCodeInput() {
+            const codeVal = document.getElementById('supplierCode').value.trim(); const found = supplierDatabase.find(s => s.code === codeVal);
+            if (found) { document.getElementById('supplierName').value = found.name; autoSyncSupplierLevel(found); }
+            evaluateTestingRequirement();
+        }
+        function handleSupplierNameInput() {
+            const nameVal = document.getElementById('supplierName').value.trim(); const found = supplierDatabase.find(s => s.name === nameVal);
+            if (found) { document.getElementById('supplierCode').value = found.code; autoSyncSupplierLevel(found); }
+            evaluateTestingRequirement();
+        }
+        function checkAndLearnNewSupplier(code, name, assignedLevel) {
+            if (!code || !name) return;
+            const existingIndex = supplierDatabase.findIndex(s => s.code.toLowerCase() === code.toLowerCase() || s.name.toLowerCase() === name.toLowerCase());
+            if (existingIndex !== -1) { supplierDatabase[existingIndex].level = assignedLevel; } else { supplierDatabase.push({ code: code, name: name, level: assignedLevel }); }
+            localStorage.setItem('MATTEL_SUPPLIER_DB_V140', JSON.stringify(supplierDatabase)); refreshSupplierDatalists();
+        }
+
+        function updateSubCategories() {
+            const categorySelect = document.getElementById('materialCategory'); const subSelect = document.getElementById('materialTypeRule'); const selectedCatCode = categorySelect.value;
+            if(!subSelect) return;
+            subSelect.innerHTML = ""; if (!selectedCatCode || !subCategoryMap[selectedCatCode]) { subSelect.innerHTML = '<option value="">-- 请先选择大类 --</option>'; return; }
+            subCategoryMap[selectedCatCode].forEach(sub => { const opt = document.createElement('option'); opt.value = sub; opt.textContent = sub; subSelect.appendChild(opt); });
+        }
+        function getRuleRequirements(categoryCode, csLevel) { if (csLevel === "非指定") return { freq: "每批" }; return { freq: (csLevel === "C级") ? "6个月" : "12个月" }; }
+        function evaluateTestingRequirement() {
+            const categoryCode = document.getElementById('materialCategory').value; const csLevel = document.getElementById('csLevel').value;
+            const mNo = document.getElementById('materialNo').value.trim(); const sCode = document.getElementById('supplierCode').value.trim(); const statusBox = document.getElementById('statusResult');
+            if (!categoryCode || !mNo || !sCode) { if (statusBox) statusBox.style.display = 'none'; return null; }
+            const rule = getRuleRequirements(categoryCode, csLevel); const deliveryDateInput = document.getElementById('deliveryDate').value; const todayDate = deliveryDateInput ? new Date(deliveryDateInput) : new Date();
+            if (rule.freq === "每批") {
+                if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🚨 【必须测试】 (每批必检类型)`; }
+                return { action: "必须测试 / Bắt buộc", color: "row-red", nextDateTs: todayDate.getTime(), isFollowerInherited: false };
+            }
+            const existingRecords = dbRecords.filter(r => r.supplierCode.toLowerCase() === sCode.toLowerCase() && r.materialNo.toLowerCase() === mNo.toLowerCase());
+            if (existingRecords.length > 0) {
+                const activeReports = existingRecords.filter(r => r.reportDateTs && !r.isFollowerInherited);
+                if (activeReports.length > 0) {
+                    activeReports.sort((a,b) => b.reportDateTs - a.reportDateTs); const latestReport = activeReports[0]; let expDate = new Date(latestReport.reportDateTs); expDate.setMonth(expDate.getMonth() + (rule.freq === "6个月" ? 6 : 12));
+                    if (statusBox) { statusBox.className = "status-box status-green"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🔒 【无需测试】系统自动关联主报告（单号：${latestReport.testReportNo}）。`; }
+                    document.getElementById('reportDate').value = convertToInputFormat(latestReport.reportDateTs); document.getElementById('testReportNo').value = latestReport.testReportNo;
+                    return { action: "无需测试 / Không cần thiết", color: "row-green", nextDateTs: expDate.getTime(), isFollowerInherited: true };
+                }
+                if (statusBox) { statusBox.className = "status-box status-orange"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🔒 【触发智能联动锁死】检测到此物料已有前置主测试批次在待检队列中。`; }
+                document.getElementById('reportDate').value = ""; document.getElementById('testReportNo').value = "";
+                return { action: "无需测试 / Không cần thiết", color: "row-green", nextDateTs: Date.now(), isFollowerInherited: true };
+            }
+            if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🚨 【必须测试】当前物料设为主测试批次。`; }
+            return { action: "必须测试 / Bắt buộc", color: "row-red", nextDateTs: Date.now(), isFollowerInherited: false };
+        }
+
+        function addRecord() {
+            const form = document.getElementById('recordForm'); if (!form.checkValidity()) { alert("请填齐必填字段！"); return; }
+            const qtyInput = document.getElementById('qty').value; const catCode = document.getElementById('materialCategory').value;
+            const sCode = document.getElementById('supplierCode').value.trim(); const sName = document.getElementById('supplierName').value.trim(); const assignedLevel = document.getElementById('csLevel').value;
+            checkAndLearnNewSupplier(sCode, sName, assignedLevel); const evalResult = evaluateTestingRequirement(); if (!evalResult) return;
+
+            let rDateTs = null; let reportNo = ""; if (!evalResult.isFollowerInherited) { rDateTs = parseToTimestamp(document.getElementById('reportDate').value); reportNo = document.getElementById('testReportNo').value.trim(); }
+
+            let matchedTemplateRows = [];
+            const subCatVal = document.getElementById('materialTypeRule').value;
+            const mainCatSelect = document.getElementById('materialCategory');
+            const mainCatLabel = mainCatSelect.options[mainCatSelect.selectedIndex].text;
+
+            if (subCatVal && physicalSubBlankTemplates[subCatVal]) {
+                matchedTemplateRows = physicalSubBlankTemplates[subCatVal];
+            } else if (mainCatLabel && physicalSubBlankTemplates[mainCatLabel]) {
+                matchedTemplateRows = physicalSubBlankTemplates[mainCatLabel];
+            } else {
+                matchedTemplateRows = physicalSubBlankTemplates["硬胶类 (Nhựa cứng)"];
+            }
+
+            const blankProjRows = matchedTemplateRows.map(row => { 
+                return { id: row.id, item: row.item, spec: row.spec, sampleQty: "", failQty: "", dataValue: "" }; 
+            });
+
+            const newRecord = {
+                id: "MAT_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+                poNo: document.getElementById('poNo').value, deliveryDateTs: parseToTimestamp(document.getElementById('deliveryDate').value), 
+                supplierCode: sCode, supplierName: sName, csLevel: assignedLevel, materialCategoryCode: catCode, materialCategory: categoryLabelMap[catCode] || catCode,
+                materialTypeRule: subCatVal, materialNo: document.getElementById('materialNo').value, materialName: document.getElementById('materialName').value,
+                reportDateTs: rDateTs, testReportNo: reportNo, accessible: document.getElementById('accessible').value, retained: document.getElementById('retained').value,
+                coated: document.getElementById('coated').value, pkgProd: document.getElementById('pkgProd').value, lotNo: document.getElementById('lotNo').value, qty: parseFloat(qtyInput), unit: document.getElementById('unit').value,
+                decision: evalResult.action, colorClass: evalResult.color, nextDateTs: evalResult.nextDateTs, isFollowerInherited: evalResult.isFollowerInherited,
+                physicalReport: { 
+                    reportNo: "", finalStatus: "待判定", inspDate: convertToInputFormat(Date.now()), inspector: "IQC001", totalSampleQty: "", aqlMajor: "", aqlMinor: "", notesText: "", items: blankProjRows,
+                    approvalStatus: "待审批", approverName: "QC主管", approvalDate: convertToInputFormat(Date.now()), approvalNotes: "" 
+                } 
+            };
+
+            dbRecords.push(newRecord); saveDatabaseToStorage(); forceChainSyncAllRecords();
+            document.getElementById('recordForm').reset(); const subSelect = document.getElementById('materialTypeRule'); if (subSelect) subSelect.innerHTML = '<option value="">-- 请先选择大类 --</option>';
+            const statusBox = document.getElementById('statusResult'); if (statusBox) statusBox.style.display = 'none';
+            const toast = document.getElementById('toastMsg'); if (toast) toast.style.display = 'inline-flex'; setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+        }
+
+        // ==================== 🛠️ 核心：检验员/主管权限展示与修改控制 ====================
+        function openPhysicsModal(recordId) {
+            currentActiveRecordIdForPhysics = recordId; const rec = dbRecords.find(item => item.id === recordId); if (!rec) return;
+            if (!rec.physicalReport) {
+                let matchedTemplateRows = [];
+                const subCatVal = rec.materialTypeRule; const catCode = rec.materialCategoryCode; const mainCatLabel = rec.materialCategory;
+                
+                if (subCatVal === "其他") {
+                    if (catCode === "ELECTRONIC" && physicalSubBlankTemplates["电子物料其他"]) matchedTemplateRows = physicalSubBlankTemplates["电子物料其他"];
+                    else if (catCode === "PACKAGING" && physicalSubBlankTemplates["包材其他"]) matchedTemplateRows = physicalSubBlankTemplates["包材其他"];
+                    else if (physicalSubBlankTemplates[mainCatLabel]) matchedTemplateRows = physicalSubBlankTemplates[mainCatLabel];
+                    else matchedTemplateRows = physicalSubBlankTemplates["硬胶类 (Nhựa cứng)"];
+                } else if (subCatVal && physicalSubBlankTemplates[subCatVal]) {
+                    matchedTemplateRows = physicalSubBlankTemplates[subCatVal];
+                } else if (mainCatLabel && physicalSubBlankTemplates[mainCatLabel]) {
+                    matchedTemplateRows = physicalSubBlankTemplates[mainCatLabel];
+                } else {
+                    matchedTemplateRows = physicalSubBlankTemplates["硬胶类 (Nhựa cứng)"];
+                }
+
+                const blankProjRows = matchedTemplateRows.map(row => { return { id: row.id, item: row.item, spec: row.spec, sampleQty: "", failQty: "", dataValue: "" }; });
+                rec.physicalReport = { reportNo: "", finalStatus: "待判定", inspDate: convertToInputFormat(Date.now()), inspector: "IQC001", totalSampleQty: "", aqlMajor: "", aqlMinor: "", notesText: "", items: blankProjRows, approvalStatus: "待审批", approverName: "QC主管", approvalDate: convertToInputFormat(Date.now()), approvalNotes: "" };
+            }
+            
+            if (!rec.physicalReport.approvalStatus) rec.physicalReport.approvalStatus = "待审批";
+            if (!rec.physicalReport.approvalDate) rec.physicalReport.approvalDate = convertToInputFormat(Date.now());
+            if (!rec.physicalReport.approverName) rec.physicalReport.approverName = "QC主管";
+            
+            if (!rec.physicalReport.reportNo) {
+                const now = new Date();
+                const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
+                const datePrefix = `${year}${month}${day}`;
+                const todaysReports = dbRecords.filter(item => item.physicalReport && item.physicalReport.reportNo && item.physicalReport.reportNo.startsWith(`IQCRPT-${datePrefix}`)).map(item => item.physicalReport.reportNo);
+                let nextSeq = 1;
+                if (todaysReports.length > 0) {
+                    const seqNumbers = todaysReports.map(no => { const parts = no.split('-'); return parseInt(parts[parts.length - 1], 10); }).filter(num => !isNaN(num));
+                    if (seqNumbers.length > 0) { nextSeq = Math.max(...seqNumbers) + 1; }
+                }
+                rec.physicalReport.reportNo = `IQCRPT-${datePrefix}-${String(nextSeq).padStart(4, '0')}`;
+            }
+
+            document.getElementById('mReportNoShow').innerText = rec.physicalReport.reportNo;
+            document.getElementById('mMetaPo').innerText = rec.poNo; document.getElementById('mMetaItemCode').innerText = rec.materialNo; document.getElementById('mMetaItemName').innerText = rec.materialName;
+            document.getElementById('mMetaSupplier').innerText = `[${rec.supplierCode}] ${rec.supplierName}`; document.getElementById('mMetaLot').innerText = rec.lotNo || "未填";
+            document.getElementById('mMetaQty').innerText = `${rec.qty} (${unitTranslationMap[rec.unit] || rec.unit})`;
+            document.getElementById('mInspDate').value = rec.physicalReport.inspDate || convertToInputFormat(Date.now());
+            document.getElementById('mInspector').value = rec.physicalReport.inspector || "IQC001";
+            document.getElementById('mTotalSampleQty').value = rec.physicalReport.totalSampleQty || "";
+            document.getElementById('mAcMajor').value = rec.physicalReport.aqlMajor || "";
+            document.getElementById('mAcMinor').value = rec.physicalReport.aqlMinor || "";
+            document.getElementById('mNotes').value = rec.physicalReport.notesText || "";
+            document.getElementById('mFinalResult').value = rec.physicalReport.finalStatus || "待判定";
+            
+            document.getElementById('mApprovalStatus').value = rec.physicalReport.approvalStatus;
+            document.getElementById('mApproverName').value = rec.physicalReport.approverName;
+            document.getElementById('mApprovalDate').value = rec.physicalReport.approvalDate;
+            document.getElementById('mApprovalNotes').value = rec.physicalReport.approvalNotes || "";
+
+            // 🌟🌟🌟 v1.5 全端闭环打印修复逻辑 🌟🌟🌟
+            const isPending = rec.physicalReport.approvalStatus === "待审批";
+            
+            if (isSupervisorMode) {
+                // 主管模式下：全部展示并可编辑
+                document.getElementById('supervisorArea').style.display = "block";
+                document.getElementById('btnPrintApproval').style.display = "inline-block";
+                document.getElementById('mApprovalStatus').disabled = false;
+                document.getElementById('mApproverName').disabled = false;
+                document.getElementById('mApprovalDate').disabled = false;
+                document.getElementById('mApprovalNotes').disabled = false;
+            } else {
+                // 检验员模式下
+                if (!isPending) {
+                    // 如果单据【已批准】，向检验员展示【只读】的审批区，并点亮打印按钮
+                    document.getElementById('supervisorArea').style.display = "block";
+                    document.getElementById('btnPrintApproval').style.display = "inline-block";
+                } else {
+                    // 尚未审批，隐藏一切审批区和打印按钮
+                    document.getElementById('supervisorArea').style.display = "none";
+                    document.getElementById('btnPrintApproval').style.display = "none";
+                }
+                // 检验员永远无法修改审批结论
+                document.getElementById('mApprovalStatus').disabled = true;
+                document.getElementById('mApproverName').disabled = true;
+                document.getElementById('mApprovalDate').disabled = true;
+                document.getElementById('mApprovalNotes').disabled = true;
+            }
+
+            syncReBadge('Major'); syncReBadge('Minor');
+
+            const tbody = document.getElementById('physicsModalTableBody'); tbody.innerHTML = "";
+            rec.physicalReport.items.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td align="center">${item.id}</td>
+                    <td><strong>${item.item}</strong></td>
+                    <td style="font-size:0.85em; color:#666; white-space: pre-wrap;">${item.spec}</td>
+                    <td><input type="number" id="pSampleRow_${index}" value="${item.sampleQty || ''}" placeholder="数量"></td>
+                    <td><input type="number" id="pFailRow_${index}" value="${item.failQty || ''}" placeholder="不良"></td>
+                    <td><input type="text" id="pDataRow_${index}" value="${item.dataValue || ''}" placeholder="数据记录..."></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('physicsModal').style.display = "flex";
+        }
+
+        function closePhysicsModal() { document.getElementById('physicsModal').style.display = "none"; currentActiveRecordIdForPhysics = null; }
+        
+        function savePhysicsModalData() {
+            if (!currentActiveRecordIdForPhysics) return; const rec = dbRecords.find(item => item.id === currentActiveRecordIdForPhysics); if (!rec) return;
+            rec.physicalReport.items.forEach((item, index) => {
+                item.sampleQty = document.getElementById(`pSampleRow_${index}`).value;
+                item.failQty = document.getElementById(`pFailRow_${index}`).value;
+                item.dataValue = document.getElementById(`pDataRow_${index}`).value;
+            });
+            rec.physicalReport.inspDate = document.getElementById('mInspDate').value;
+            rec.physicalReport.inspector = document.getElementById('mInspector').value;
+            rec.physicalReport.totalSampleQty = document.getElementById('mTotalSampleQty').value;
+            rec.physicalReport.aqlMajor = document.getElementById('mAcMajor').value;
+            rec.physicalReport.aqlMinor = document.getElementById('mAcMinor').value;
+            rec.physicalReport.notesText = document.getElementById('mNotes').value;
+            rec.physicalReport.finalStatus = document.getElementById('mFinalResult').value;
+            
+            rec.physicalReport.approvalStatus = document.getElementById('mApprovalStatus').value;
+            rec.physicalReport.approverName = document.getElementById('mApproverName').value;
+            rec.physicalReport.approvalDate = document.getElementById('mApprovalDate').value;
+            rec.physicalReport.approvalNotes = document.getElementById('mApprovalNotes').value;
+
+            saveDatabaseToStorage(); renderTable(); closePhysicsModal();
+            alert("🔒 检验与审批数据已安全保存至系统数据库中！");
+        }
+        
+        function syncReBadge(type) {
+            const acInput = document.getElementById(type === 'Major' ? 'mAcMajor' : 'mAcMinor');
+            const reBadge = document.getElementById(type === 'Major' ? 'badgeReMajor' : 'badgeReMinor');
+            if (acInput && acInput.value.trim() !== "" && !isNaN(acInput.value)) {
+                reBadge.innerText = `Re: ${parseInt(acInput.value, 10) + 1}`;
+            } else { reBadge.innerText = `Re: --`; }
+        }
+
+        // ==================== 🖨️ 闭环 PDF 打印控制 ====================
+        function printPhysicalReportToPDF() {
+            const rec = dbRecords.find(item => item.id === currentActiveRecordIdForPhysics);
+            if (!rec || !rec.physicalReport || !rec.physicalReport.reportNo) {
+                alert("无有效的报告数据，无法打印！"); return;
+            }
+            
+            const isPending = rec.physicalReport.approvalStatus === "待审批";
+            if (!isSupervisorMode && isPending) { 
+                alert("⛔ 报告尚未审批，目前无法打印最终 PDF 审批报告。"); return; 
+            }
+            
+            const textareaValue = document.getElementById('mNotes').value;
+            const printBlock = document.getElementById('printRemarksBlock');
+            if (printBlock) printBlock.innerText = textareaValue || ""; 
+            
+            const appNotesValue = document.getElementById('mApprovalNotes').value;
+            const printAppBlock = document.getElementById('printApprovalNotesBlock');
+            if (printAppBlock) printAppBlock.innerText = appNotesValue || ""; 
+
+            const originalTitle = document.title;
+            const reportNo = rec.physicalReport.reportNo;
+            const safeFileName = reportNo.replace(/[\\/:*?"<>|]/g, '_');
+            document.title = safeFileName;
+            
+            window.print();
+            setTimeout(() => { document.title = originalTitle; }, 1000);
+        }
+
+        function sortTable(fieldName) {
+            let currentDir = sortDirections[fieldName] || 'desc'; let nextDir = currentDir === 'desc' ? 'asc' : 'desc';
+            sortDirections[fieldName] = nextDir; currentSortField = fieldName;
+            dbRecords.sort((a, b) => {
+                let valA = fieldName === 'physicalStatus' ? (a.physicalReport && a.physicalReport.finalStatus ? a.physicalReport.finalStatus : "待判定") : (a[fieldName] ?? '');
+                let valB = fieldName === 'physicalStatus' ? (b.physicalReport && b.physicalReport.finalStatus ? b.physicalReport.finalStatus : "待判定") : (b[fieldName] ?? '');
+                if (!isNaN(valA) && !isNaN(valB) && typeof valA !== 'string') return nextDir === 'asc' ? valA - valB : valB - valA;
+                return nextDir === 'asc' ? String(valA).localeCompare(String(valB), 'zh-CN') : String(valB).localeCompare(String(valA), 'zh-CN');
+            });
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('recordTableBody'); if (!tbody) return; tbody.innerHTML = "";
+            const treeGroup = {};
+            dbRecords.forEach(r => {
+                if(!r.deliveryDateTs) return;
+                const d = new Date(r.deliveryDateTs);
+                const yearKey = `${d.getFullYear()}年`;
+                const monthKey = `${String(d.getMonth() + 1).padStart(2, '0')}月`;
+                if (!treeGroup[yearKey]) { treeGroup[yearKey] = {}; }
+                if (!treeGroup[yearKey][monthKey]) { treeGroup[yearKey][monthKey] = []; }
+                treeGroup[yearKey][monthKey].push(r);
+            });
+
+            Object.keys(treeGroup).sort((a, b) => b.localeCompare(a)).forEach(yearStr => {
+                if (collapsedYearsState[yearStr] === undefined) collapsedYearsState[yearStr] = false;
+                const isYearCollapsed = collapsedYearsState[yearStr];
+                let yearTotalBatches = 0;
+                Object.keys(treeGroup[yearStr]).forEach(m => { yearTotalBatches += treeGroup[yearStr][m].length; });
+
+                const yearTr = document.createElement('tr'); yearTr.className = "year-group-header";
+                yearTr.innerHTML = `<td colspan="15" style="padding: 11px 10px; text-align:left; font-weight:bold;">${isYearCollapsed ? '➕' : '➖'} 📅 归档年份：${yearStr} (${yearTotalBatches} 批次)</td>`;
+                yearTr.style.cursor = "pointer";
+                yearTr.onclick = function() { collapsedYearsState[yearStr] = !collapsedYearsState[yearStr]; renderTable(); };
+                tbody.appendChild(yearTr);
+
+                if (isYearCollapsed) return;
+
+                const monthsInYear = treeGroup[yearStr];
+                Object.keys(monthsInYear).sort((a, b) => b.localeCompare(a)).forEach(monthStr => {
+                    const fullMonthCombinedKey = `${yearStr}${monthStr}`;
+                    if (collapsedMonthsState[fullMonthCombinedKey] === undefined) collapsedMonthsState[fullMonthCombinedKey] = false;
+                    const isMonthCollapsed = collapsedMonthsState[fullMonthCombinedKey];
+                    const matchedRecords = monthsInYear[monthStr];
+
+                    const monthTr = document.createElement('tr'); monthTr.className = "month-group-header";
+                    monthTr.innerHTML = `<td colspan="15" style="padding: 9px 10px 9px 25px; text-align:left; font-weight:bold;">${isMonthCollapsed ? '➕' : '➖'} 到货月份：${monthStr} (${matchedRecords.length} 批次)</td>`;
+                    monthTr.style.cursor = "pointer";
+                    monthTr.onclick = function() { collapsedMonthsState[fullMonthCombinedKey] = !collapsedMonthsState[fullMonthCombinedKey]; renderTable(); };
+                    tbody.appendChild(monthTr);
+
+                    if (isMonthCollapsed) return;
+
+                    matchedRecords.forEach(r => {
+                        const tr = document.createElement('tr'); tr.className = r.colorClass || ''; const isLocked = r.isFollowerInherited;
+                        const dateText = r.reportDateTs ? renderComputerDate(r.reportDateTs) : (isLocked ? `[锁定: 跟随主批次]` : `[双击补充日期]`);
+                        const reportNoText = r.testReportNo ? r.testReportNo : (isLocked ? `[锁定: 跟随主批次]` : `[双击补充编号]`);
+                        const translatedUnit = unitTranslationMap[r.unit] || r.unit || '个 / Cái';
+
+                        let physicsStatusText = "⏳ 待检验 (未录入)"; let physicsColorBtnClass = "btn-p-wait"; 
+                        if (r.physicalReport && r.physicalReport.finalStatus !== "待判定") {
+                            const appStatus = r.physicalReport.approvalStatus || "待审批";
+                            if (appStatus === "待审批") {
+                                physicsStatusText = "⏳ 待审批 (Chờ duyệt)"; physicsColorBtnClass = "btn-p-pending";
+                            } else if (appStatus.includes("Approved") || appStatus.includes("同意")) {
+                                physicsStatusText = "✅ 已批准 (Approved)"; physicsColorBtnClass = "btn-p-pass";
+                            } else if (appStatus.includes("AOD") || appStatus.includes("特采")) {
+                                physicsStatusText = "⚠️ 特采批准 (AOD)"; physicsColorBtnClass = "btn-p-aod";
+                            } else if (appStatus.includes("Rejected") || appStatus.includes("拒收")) {
+                                physicsStatusText = "❌ 已拒收 (Rejected)"; physicsColorBtnClass = "btn-p-fail";
+                            }
+                        }
+
+                        tbody.appendChild(tr);
+                        tr.innerHTML = `
+                            <td><input type="checkbox" class="row-select" value="${r.id}"></td>
+                            <td>${r.poNo}</td>
+                            <td>${renderComputerDate(r.deliveryDateTs)}</td>
+                            <td>${r.supplierCode}</td>
+                            <td>${r.supplierName}</td>
+                            <td>${r.csLevel}</td>
+                            <td>${r.materialCategory}</td>
+                            <td><strong>${r.materialNo}</strong></td>
+                            <td>${r.materialName}</td>
+                            <td class="${isLocked ? 'absolute-locked-cell' : 'editable-date-cell'}" ${isLocked ? '' : `ondblclick="makeDateCellEditable(this, '${r.id}')"`}>${dateText}</td>
+                            <td class="${isLocked ? 'absolute-locked-cell' : 'editable-cell'}" ${isLocked ? '' : `ondblclick="makeNoCellEditable(this, '${r.id}')"`}>${reportNoText}</td>
+                            <td><strong>${r.qty}</strong></td>
+                            <td><span style="color:#0056b3; font-weight:bold;">${translatedUnit}</span></td>
+                            <td><strong>${r.decision}</strong></td>
+                            <td align="center">
+                                <button type="button" class="btn ${physicsColorBtnClass}" onclick="openPhysicsModal('${r.id}')">
+                                    ${physicsStatusText}
+                                </button>
+                            </td>
+                        `;
+                    });
+                });
+            });
+        }
+
+        function makeDateCellEditable(cell, recordId) {
+            if (cell.querySelector('input')) return; const record = dbRecords.find(item => item.id === recordId); if(record && record.isFollowerInherited) return; 
+            const input = document.createElement('input'); input.type = 'date'; if (record && record.reportDateTs) input.value = convertToInputFormat(record.reportDateTs);
+            cell.innerHTML = ''; cell.appendChild(input); input.focus();
+            input.onblur = function() { saveInlineData(recordId, 'reportDateTs', parseToTimestamp(input.value)); };
+            input.onkeydown = function(e) { if (e.key === 'Enter') saveInlineData(recordId, 'reportDateTs', parseToTimestamp(input.value)); };
+        }
+
+        function makeNoCellEditable(cell, recordId) {
+            if (cell.querySelector('input')) return; const record = dbRecords.find(item => item.id === recordId); if(record && record.isFollowerInherited) return; 
+            const input = document.createElement('input'); input.type = 'text'; input.value = record ? record.testReportNo : ''; input.style.width = '90%';
+            cell.innerHTML = ''; cell.appendChild(input); input.focus();
+            input.onblur = function() { saveInlineData(recordId, 'testReportNo', input.value); };
+            input.onkeydown = function(e) { if (e.key === 'Enter') saveInlineData(recordId, 'testReportNo', input.value); };
+        }
+
+        function saveInlineData(recordId, field, newValue) {
+            const targetIdx = dbRecords.findIndex(item => item.id === recordId); if (targetIdx === -1 || dbRecords[targetIdx].isFollowerInherited) return;
+            if (field === 'reportDateTs') { dbRecords[targetIdx].reportDateTs = newValue; } else { dbRecords[targetIdx].testReportNo = newValue.trim(); }
+            forceChainSyncAllRecordsWithoutResort(); saveDatabaseToStorage(); renderTable(); evaluateTestingRequirement(); 
+        }
+
+        function forceChainSyncAllRecordsWithoutResort() {
+            const timelineBuffer = [...dbRecords].sort((a, b) => (a.deliveryDateTs || 0) - (b.deliveryDateTs || 0)); const trackedMasters = {};
+            timelineBuffer.forEach(rec => {
+                const rule = getRuleRequirements(rec.materialCategoryCode, rec.csLevel); const key = `${rec.supplierCode.toLowerCase()}_${rec.materialNo.toLowerCase()}`;
+                if (rule.freq === "每批") return; if (!trackedMasters[key]) { trackedMasters[key] = rec; }
+            });
+            dbRecords.forEach((currentRec, idx) => {
+                const rule = getRuleRequirements(currentRec.materialCategoryCode, currentRec.csLevel); const key = `${currentRec.supplierCode.toLowerCase()}_${currentRec.materialNo.toLowerCase()}`;
+                if (rule.freq === "每批") {
+                    dbRecords[idx].isFollowerInherited = false; dbRecords[idx].decision = "必须测试 / Bắt buộc"; dbRecords[idx].colorClass = "row-red"; dbRecords[idx].nextDateTs = currentRec.deliveryDateTs || Date.now(); return;
+                }
+                const activeMaster = trackedMasters[key];
+                if (!activeMaster || currentRec.id === activeMaster.id) {
+                    dbRecords[idx].isFollowerInherited = false; 
+                    if (currentRec.reportDateTs) {
+                        let expDate = new Date(currentRec.reportDateTs); expDate.setMonth(expDate.getMonth() + (rule.freq === "6个月" ? 6 : 12));
+                        dbRecords[idx].decision = "无需测试 / Không cần thiết"; dbRecords[idx].colorClass = "row-green"; dbRecords[idx].nextDateTs = expDate.getTime();
+                    } else {
+                        dbRecords[idx].decision = "必须测试 / Bắt buộc"; dbRecords[idx].colorClass = "row-red"; dbRecords[idx].nextDateTs = currentRec.deliveryDateTs || Date.now();
+                    }
+                    return; 
+                }
+                dbRecords[idx].reportDateTs = activeMaster.reportDateTs; dbRecords[idx].testReportNo = activeMaster.testReportNo; dbRecords[idx].isFollowerInherited = true; 
+                if (activeMaster.reportDateTs) {
+                    let expDate = new Date(activeMaster.reportDateTs); expDate.setMonth(expDate.getMonth() + (rule.freq === "6个月" ? 6 : 12));
+                    dbRecords[idx].decision = "无需测试 / Không cần thiết"; dbRecords[idx].colorClass = "row-green"; dbRecords[idx].nextDateTs = expDate.getTime();
+                } else {
+                    dbRecords[idx].decision = "必须测试 / Bắt buộc"; dbRecords[idx].colorClass = "row-red"; dbRecords[idx].nextDateTs = currentRec.deliveryDateTs || Date.now();
+                }
+            });
+        }
+
+        function forceChainSyncAllRecords() {
+            forceChainSyncAllRecordsWithoutResort(); 
+            if(!currentSortField) { dbRecords.sort((a,b) => (b.deliveryDateTs || 0) - (a.deliveryDateTs || 0)); } 
+            renderTable(); 
+        }
+
+        function deleteSelectedRecords() {
+            const checkboxes = document.querySelectorAll('.row-select:checked');
+            if (checkboxes.length === 0) { alert("请先勾选需要删除的行！"); return; }
+            if (!confirm("确定要删除选中的" + checkboxes.length + "条记录吗？")) return;
+            checkboxes.forEach(cb => { dbRecords = dbRecords.filter(r => r.id !== cb.value); });
+            saveDatabaseToStorage(); renderTable();
+            document.getElementById('selectAll').checked = false;
+        }
+
+        function exportSelectedRecordsToJSON() {
+            const checkboxes = document.querySelectorAll('.row-select:checked');
+            if (checkboxes.length === 0) { alert("🚨 请先在台账左侧勾选您想要单独导出来货的批次！"); return; }
+            try {
+                const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+                const filteredRecords = dbRecords.filter(r => selectedIds.includes(r.id));
+                const packageData = { suppliers: supplierDatabase || [], records: filteredRecords };
+                
+                const firstRecord = filteredRecords[0];
+                const appStatus = firstRecord.physicalReport ? (firstRecord.physicalReport.approvalStatus || "待审批") : "待审批";
+                const prefix = (appStatus.includes("Approved") || appStatus.includes("同意")) ? "已批准" : "待批准";
+                
+                const dateStr = getFormattedDateOnly();
+                const timeStr = getFormattedTimeOnly();
+                
+                const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob); 
+                const a = document.createElement('a');
+                a.href = url; 
+                a.download = `${prefix}-${dateStr}-${timeStr}.json`; 
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            } catch (err) { alert("勾选批次导出失败: " + err.message); }
+        }
+
+        function exportRecords() {
+            try {
+                const packageData = { suppliers: supplierDatabase || [], records: dbRecords || [] };
+                const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob); const a = document.createElement('a');
+                a.href = url; 
+                
+                const dateStr = getFormattedDateOnly();
+                const timeStr = getFormattedTimeOnly();
+                a.download = `Mattel_Integrated_DB_Backup_${dateStr}_${timeStr}.json`; 
+                
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            } catch (err) { alert("JSON备份导出失败: " + err.message); }
+        }
+
+        function exportToExcel() {
+            if (!dbRecords || dbRecords.length === 0) { alert("没有数据可以导出！"); return; }
+            const excelRows = dbRecords.map((r, index) => {
+                let outStatus = "未录入";
+                if (r.physicalReport && r.physicalReport.finalStatus !== "待判定") {
+                    outStatus = r.physicalReport.finalStatus.includes("AOD") ? "初判 AOD" : r.physicalReport.finalStatus;
+                }
+                return {
+                    "序号 (STT)": index + 1, 
+                    "送货单号 (Mã PO)": r.poNo || "", 
+                    "交货日期 (Ngày giao)": r.deliveryDateTs ? new Date(r.deliveryDateTs).toLocaleDateString() : "",
+                    "供应商代码 (Mã NCC)": r.supplierCode || "", 
+                    "供应商名称 (Tên NCC)": r.supplierName || "", 
+                    "供应商等级 (Cấp NCC)": r.csLevel || "",
+                    "物料大类 (Phân loại lớn)": r.materialCategory || "", 
+                    "物料细类 (Loại chi tiết)": r.materialTypeRule || "", 
+                    "物料编号 (Mã vật liệu)": r.materialNo || "", 
+                    "物料名称 (Tên vật liệu)": r.materialName || "",
+                    "化学报告日期 (Ngày BC)": r.reportDateTs ? new Date(r.reportDateTs).toLocaleDateString() : "未填", 
+                    "化验报告编号 (Mã BC)": r.testReportNo || "未填", 
+                    "数量 (Số lượng)": r.qty || 0, 
+                    "单位 (Đơn vị)": unitTranslationMap[r.unit] || r.unit || "", 
+                    "化学频次判定": r.decision || "",
+                    "物理检验报告单号": (r.physicalReport ? (r.physicalReport.reportNo || "") : ""),
+                    "物理总抽样数": (r.physicalReport ? (r.physicalReport.totalSampleQty || 0) : 0),
+                    "物理Major_Ac数": (r.physicalReport ? (r.physicalReport.aqlMajor || 0) : 0),
+                    "物理Minor_Ac数": (r.physicalReport ? (r.physicalReport.aqlMinor || 0) : 0),
+                    "检验员初判结论": outStatus, 
+                    "物理检验员": (r.physicalReport ? (r.physicalReport.inspector || "") : ""), 
+                    "物理检验日期": (r.physicalReport ? (r.physicalReport.inspDate || "") : ""),
+                    "主管审批结论": (r.physicalReport ? (r.physicalReport.approvalStatus || "待审批") : "待审批"),
+                    "主管签名": (r.physicalReport ? (r.physicalReport.approverName || "") : ""),
+                    "审批日期": (r.physicalReport ? (r.physicalReport.approvalDate || "") : "")
+                };
+            });
+            const worksheet = XLSX.utils.json_to_sheet(excelRows); const workbook = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(workbook, worksheet, "综合质量管理台账");
+            XLSX.writeFile(workbook, `Mattel_Comprehensive_Ledger_${getFormattedDateOnly()}_${getFormattedTimeOnly()}.xlsx`);
+        }
+
+        function toggleTheme() { const root = document.documentElement; root.getAttribute('data-theme') === 'dark' ? root.removeAttribute('data-theme') : root.setAttribute('data-theme', 'dark'); }
+
+        window.onload = function() {
+            initSupplierDatabase(); loadDatabaseFromStorage(); forceChainSyncAllRecordsWithoutResort(); renderTable();
+        };
+    </script>
+</body>
+</html>
