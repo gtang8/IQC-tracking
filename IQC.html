@@ -42,7 +42,7 @@
             .modal-meta-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0 !important; width: 100% !important; background: transparent !important; border: 1px solid #000000 !important; padding: 0 !important; margin-bottom: 4px !important; }
             .modal-meta-grid > div { display: block !important; width: auto !important; padding: 4px 6px !important; box-sizing: border-box !important; border: 1px solid #000000 !important; font-size: 10px !important; vertical-align: top !important; white-space: normal !important; word-break: break-all !important; }
             .modal-meta-grid input[type="number"] { width: 40px !important; border: none !important; border-bottom: 1px solid #000000 !important; text-align: center !important; }
-            .re-auto-badge { border: none !important; background: transparent !important; padding: 0 !important; color: #000000 !important; font-weight: bold !important; }
+            .re-auto-badge { border: none !important; background: transparent !important; padding: 0 !important; color: #000000 !important; font-weight: bold !important; white-space: nowrap; word-break: normal; }
             
             .physics-input-table { width: 100% !important; box-sizing: border-box !important; border-collapse: collapse !important; }
             .physics-input-table th { background: #f0f0f0 !important; border: 1px solid #000000 !important; font-size: 11px !important; padding: 2px !important; color: #000000 !important; text-align: center !important; font-weight: bold !important; }
@@ -169,6 +169,9 @@
         .role-badge { display: none; font-size: 0.7em; background: #e74c3c; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
         .role-badge.active-role { display: inline-block; animation: flashBadge 2s infinite; }
         @keyframes flashBadge { 0% {opacity: 1;} 50% {opacity: 0.6;} 100% {opacity: 1;} }
+        
+        /* 全局屏幕态针对角标文字断裂的免疫修复 */
+        .re-auto-badge { color: var(--danger-color); font-weight: bold; white-space: nowrap; word-break: normal; }
     </style>
 </head>
 <body>
@@ -178,37 +181,37 @@
             <!-- 💡 GitHub开源脱敏：使用通用的质量检验(Shield) SVG图标替换企业Logo -->
             <div style="display: flex; align-items: center; gap: 15px;">
                 <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzI4YTc0NSI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweiIvPjxwYXRoIGQ9Ik05IDEybDIgMiA0LTQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+" alt="Quality Icon" style="height: 38px;">
-                <h2 ondblclick="activateSupervisorMode()" style="margin: 0;">通用 IQC 进料检验与追踪系统 <span id="roleBadge" class="role-badge">主管模式激活</span></h2>
+                <h2 ondblclick="activateSupervisorMode()" style="margin: 0;">通用 IQC 进料检验与追踪系统 (开源版) <span id="roleBadge" class="role-badge">主管模式激活 (Chế độ Quản lý)</span></h2>
             </div>
-            <span style="font-weight:bold; font-size: 0.85em; color:#0056b3; margin-top: 4px;">✅ 【开源脱敏版】已去除所有敏感信息与商业标识，适合用于 GitHub 部署展示</span>
+            <span style="font-weight:bold; font-size: 0.85em; color:#0056b3; margin-top: 4px;">✅ 【开源脱敏版】名词已全局统一为“收货日期”及“化验报告” / Đã xóa thông tin nhạy cảm, mã nguồn mở GitHub</span>
         </div>
         <div class="header-actions">
-            <button class="btn btn-excel" onclick="exportToExcel()">📊 导出全量 Excel</button>
-            <button class="btn btn-success" onclick="exportRecords()">📤 导出 JSON 备份</button>
-            <button class="btn btn-primary" onclick="triggerImportFileInput()">📥 智能导入/合并 JSON</button>
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 导出全量 Excel (Xuất Excel)</button>
+            <button class="btn btn-success" onclick="exportRecords()">📤 导出 JSON 备份 (Xuất JSON)</button>
+            <button class="btn btn-primary" onclick="triggerImportFileInput()">📥 智能导入/合并 JSON (Nhập/Gộp JSON)</button>
             <input type="file" id="importRecordsFile" class="hidden-file-input" accept=".json" onchange="importRecords(event)">
             <button class="btn-theme-toggle" onclick="toggleTheme()" title="切换暗黑模式">🌓</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>1. 新来料批次输入与智能拦截判定</h3>
+        <h3>1. 新来料批次输入与智能拦截判定 (Nhập lô hàng đến mới & Đánh giá chặn thông minh)</h3>
         <form id="recordForm" onsubmit="event.preventDefault();">
             <div class="form-grid">
-                <div class="form-group"><label>送货单号 (Mã đơn hàng PO)</label><input type="text" id="poNo" required></div>
-                <div class="form-group"><label>交货日期 (Ngày nhận hàng)</label><input type="date" id="deliveryDate" required onchange="evaluateTestingRequirement()"></div>
-                <div class="form-group"><label style="color:#007bff;">供应商代码 (Mã nhà cung cấp) 🔍</label><input type="text" id="supplierCode" list="supplierCodeList" required oninput="handleSupplierCodeInput()" placeholder="请键入或选择代码"><datalist id="supplierCodeList"></datalist></div>
-                <div class="form-group"><label style="color:#007bff;">供应商名称 (Tên nhà cung cấp) 🔍</label><input type="text" id="supplierName" list="supplierNameList" required oninput="handleSupplierNameInput()" placeholder="请键入或选择名称"><datalist id="supplierNameList"></datalist></div>
+                <div class="form-group"><label>送货单号 (Mã phiếu giao hàng)</label><input type="text" id="poNo" required></div>
+                <div class="form-group"><label>收货日期 (Ngày nhận hàng)</label><input type="date" id="deliveryDate" required onchange="evaluateTestingRequirement()"></div>
+                <div class="form-group"><label style="color:#007bff;">供应商代码 (Mã nhà cung cấp) 🔍</label><input type="text" id="supplierCode" list="supplierCodeList" required oninput="handleSupplierCodeInput()" placeholder="请键入或选择代码 / Nhập hoặc chọn mã"><datalist id="supplierCodeList"></datalist></div>
+                <div class="form-group"><label style="color:#007bff;">供应商名称 (Tên nhà cung cấp) 🔍</label><input type="text" id="supplierName" list="supplierNameList" required oninput="handleSupplierNameInput()" placeholder="请键入或选择名称 / Nhập hoặc chọn tên"><datalist id="supplierNameList"></datalist></div>
                 <div class="form-group"><label style="color:#28a745;">客户供应商等级 (Cấp nhà cung cấp)</label>
                     <select id="csLevel" onchange="evaluateTestingRequirement()" style="font-weight: bold;">
-                        <option value="A/B级">A/B级 (常规/低风险)</option>
-                        <option value="C级">C级 (中频监控)</option>
-                        <option value="非指定">非指定 (每批必检)</option>
+                        <option value="A/B级">A/B级 (常规/低风险 - Thường quy/Rủi ro thấp)</option>
+                        <option value="C级">C级 (中频监控 - Giám sát trung tần)</option>
+                        <option value="非指定">非指定 (每批必检 - Kiểm tra mỗi lô)</option>
                     </select>
                 </div>
                 <div class="form-group"><label>物料大类 (Phân loại lớn vật liệu)</label>
                     <select id="materialCategory" onchange="updateSubCategories(); evaluateTestingRequirement();" required>
-                        <option value="">-- 请选择大类 --</option>
+                        <option value="">-- 请选择大类 (Chọn phân loại lớn) --</option>
                         <option value="HARD_PLASTIC">硬胶类 (Nhựa cứng)</option>
                         <option value="SOFT_PLASTIC">软胶类 (Nhựa mềm)</option>
                         <option value="COATING">表面涂层 (Lớp phủ bề mặt)</option>
@@ -223,19 +226,19 @@
                 </div>
                 <div class="form-group"><label>物料细类 (Loại vật liệu chi tiết)</label>
                     <select id="materialTypeRule" onchange="evaluateTestingRequirement();" required>
-                        <option value="">-- 请先选择大类 --</option>
+                        <option value="">-- 请先选择大类 (Vui lòng chọn loại lớn trước) --</option>
                     </select>
                 </div>
                 <div class="form-group"><label style="color:#007bff;">物料编号 (Mã vật liệu)</label><input type="text" id="materialNo" required oninput="evaluateTestingRequirement()"></div>
                 <div class="form-group"><label>物料名称 (Tên vật liệu)</label><input type="text" id="materialName" required></div>
-                <div class="form-group"><label id="lblReportDate">报告日期 (Ngày báo cáo)</label><input type="date" id="reportDate" onchange="evaluateTestingRequirement()"></div>
-                <div class="form-group"><label id="lblTestReportNo">化验报告编号 (Mã báo cáo)</label><input type="text" id="testReportNo" placeholder="暂无报告可留空"></div>
-                <div class="form-group"><label>触及 (Tiếp cận)</label><select id="accessible"><option value="触及" selected>触及 / 进行 tiếp cận</option><option value="非触及">非触及 / 不进行 tiếp cận</option></select></div>
-                <div class="form-group"><label>保留 (Bảo lưu)</label><select id="retained"><option value="保留" selected>保留 / 保留</option><option value="非保留">非保留 / 不保留</option></select></div>
-                <div class="form-group"><label>涂层 (Lớp phủ)</label><select id="coated"><option value="非涂层" selected>非涂层 / 无涂层</option><option value="涂层">涂层 / 有涂层</option></select></div>
-                <div class="form-group"><label>包装/产品 (Đóng gói / 成品)</label><select id="pkgProd"><option value="产品" selected>产品 / Thành phẩm</option><option value="包装">包装 / Đóng gói</option></select></div>
+                <div class="form-group"><label id="lblReportDate">化验报告日期 (Ngày báo cáo hóa nghiệm)</label><input type="date" id="reportDate" onchange="evaluateTestingRequirement()"></div>
+                <div class="form-group"><label id="lblTestReportNo">化验报告编号 (Mã báo cáo hóa nghiệm)</label><input type="text" id="testReportNo" placeholder="暂无报告可留空 / Có thể để trống"></div>
+                <div class="form-group"><label>触及 (Tiếp cận)</label><select id="accessible"><option value="触及" selected>触及 / Tiến hành tiếp cận</option><option value="非触及">非触及 / Không tiếp cận</option></select></div>
+                <div class="form-group"><label>保留 (Bảo lưu)</label><select id="retained"><option value="保留" selected>保留 / Bảo lưu</option><option value="非保留">非保留 / Không bảo lưu</option></select></div>
+                <div class="form-group"><label>涂层 (Lớp phủ)</label><select id="coated"><option value="非涂层" selected>非涂层 / Không có lớp phủ</option><option value="涂层">涂层 / Có lớp phủ</option></select></div>
+                <div class="form-group"><label>包装/产品 (Đóng gói / Thành phẩm)</label><select id="pkgProd"><option value="产品" selected>产品 / Thành phẩm</option><option value="包装">包装 / Đóng gói</option></select></div>
                 <div class="form-group"><label>批次号 (Số lô)</label><input type="text" id="lotNo" required></div>
-                <div class="form-group"><label style="color:#28a745;">数量 (Số lượng) 🔢</label><input type="number" id="qty" step="any" min="0" required placeholder="只允许输入数字"></div>
+                <div class="form-group"><label style="color:#28a745;">数量 (Số lượng) 🔢</label><input type="number" id="qty" step="any" min="0" required placeholder="只允许输入数字 / Chỉ nhập số"></div>
                 <div class="form-group"><label style="color:#28a745;">单位 (Đơn vị)</label>
                     <select id="unit" required>
                         <option value="个">个 / Cái</option>
@@ -249,37 +252,37 @@
             </div>
             <div id="statusResult" class="status-box"></div>
             <div class="actions-bar">
-                <button type="button" class="btn btn-primary" onclick="addRecord()">保存批次入库 (Lưu lô hàng & 初始化物理报告)</button>
+                <button type="button" class="btn btn-primary" onclick="addRecord()">保存批次入库 (Lưu lô hàng & Khởi tạo báo cáo)</button>
                 <button type="button" class="btn btn-secondary" onclick="fullResetForm()">重置表单 (Đặt lại)</button>
-                <span id="toastMsg" class="toast-msg">✅ 批次已安全入库！</span>
+                <span id="toastMsg" class="toast-msg">✅ 批次已安全入库！(Lô hàng đã được lưu an toàn!)</span>
             </div>
         </form>
     </div>
 
     <div class="card">
-        <h3>2. 本地测试历史管理台账 (检验员发往主管审批 / 主管批复回传)</h3>
+        <h3>2. 本地测试历史管理台账 (Sổ quản lý lịch sử kiểm tra cục bộ)</h3>
         <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-danger" onclick="deleteSelectedRecords()">批量安全删除选中行</button>
-            <button class="btn btn-physics" style="background-color: #17a2b8;" onclick="exportSelectedRecordsToJSON()">📤 提取导出 [选中行 JSON] 用于协同</button>
+            <button class="btn btn-danger" onclick="deleteSelectedRecords()">批量安全删除选中行 (Xóa các dòng đã chọn)</button>
+            <button class="btn btn-physics" style="background-color: #17a2b8;" onclick="exportSelectedRecordsToJSON()">📤 提取导出 [选中行 JSON] 用于协同 (Xuất [JSON đã chọn] để cộng tác)</button>
         </div>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th width="3%" style="cursor:default; background:rgba(0,0,0,0.05);"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
-                        <th onclick="sortTable('poNo')">PO单号<br>(Mã PO)</th>
-                        <th onclick="sortTable('deliveryDateTs')">交货日期<br>(Ngày giao)</th>
+                        <th onclick="sortTable('poNo')">送货单号<br>(Mã phiếu giao hàng)</th>
+                        <th onclick="sortTable('deliveryDateTs')">收货日期<br>(Ngày nhận)</th>
                         <th onclick="sortTable('supplierCode')">供应商代码<br>(Mã NCC)</th>
                         <th onclick="sortTable('supplierName')">供应商名称<br>(Tên NCC)</th>
                         <th onclick="sortTable('csLevel')">供应商等级<br>(Cấp NCC)</th>
                         <th onclick="sortTable('materialCategory')">物料大类<br>(Phân loại lớn)</th>
                         <th onclick="sortTable('materialNo')">物料编号<br>(Mã vật liệu)</th>
                         <th onclick="sortTable('materialName')">物料名称<br>(Tên vật liệu)</th>
-                        <th onclick="sortTable('reportDateTs')">化学报告日期<br>(Ngày BC hóa学)</th>
-                        <th onclick="sortTable('testReportNo')">化验报告编号<br>(Mã báo cáo)</th>
+                        <th onclick="sortTable('reportDateTs')">化验报告日期<br>(Ngày BC hóa nghiệm)</th>
+                        <th onclick="sortTable('testReportNo')">化验报告编号<br>(Mã BC hóa nghiệm)</th>
                         <th onclick="sortTable('qty')">数量<br>(Số lượng)</th>
                         <th onclick="sortTable('unit')">单位<br>(Đơn vị)</th>
-                        <th onclick="sortTable('decision')">化学频次判定<br>(Trạng thái)</th>
+                        <th onclick="sortTable('decision')">化验频次判定<br>(Trạng thái)</th>
                         <th onclick="sortTable('physicalStatus')" style="color: var(--physics-color);">物理检验与审批窗口<br>(Kiểm tra & Phê duyệt)</th>
                     </tr>
                 </thead>
@@ -295,34 +298,48 @@
                 <h2 id="modalTitle" style="margin: 0; color: var(--physics-color); flex: 1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <span>IQC 物理检验与审批窗 (Kiểm tra vật lý & Phê duyệt)</span>
                     <span style="font-size: 0.6em; color: #555; font-weight: normal; background: #e9ecef; padding: 4px 10px; border-radius: 4px; border: 1px dashed #ccc; margin-right: 15px;">
-                        报告编号 (Mã BC): <strong id="mReportNoShow" style="color:var(--primary-color);">自动生成中...</strong>
+                        报告编号 (Mã BC): <strong id="mReportNoShow" style="color:var(--primary-color);">自动生成中... (Đang tạo...)</strong>
                     </span>
                 </h2>
                 <div class="modal-close-x" onclick="closePhysicsModal()">&times;</div>
             </div>
+            
             <div class="modal-meta-grid" style="margin-top:15px;">
-                <div><strong>送货单号 (PO / Mã PO):</strong> <span id="mMetaPo"></span></div>
+                <div><strong>送货单号 (Mã phiếu giao hàng):</strong> <span id="mMetaPo"></span></div>
                 <div><strong>物料编码 (Mã vật liệu):</strong> <span id="mMetaItemCode"></span></div>
                 <div><strong>物料名称 (Tên vật liệu):</strong> <span id="mMetaItemName"></span></div>
                 <div><strong>供应商 (Nhà cung cấp):</strong> <span id="mMetaSupplier"></span></div>
                 <div><strong>批次号 (Lot No / Số lô):</strong> <span id="mMetaLot"></span></div>
                 <div><strong>到货数量 (Số lượng hàng về):</strong> <span id="mMetaQty"></span></div>
-                <div style="display: flex; align-items: center; gap: 5px;"><strong>检验日期 (Ngày kiểm tra):</strong> <input type="date" id="mInspDate" style="padding: 4px; border: 1px solid var(--border-color); border-radius: 4px;"></div>
-                <div style="display: flex; align-items: center; gap: 5px;"><strong>检验员 (Người kiểm tra):</strong>
-                    <select id="mInspector" style="padding: 4px; font-weight: bold;">
+                <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap; word-break: keep-all;"><strong>检验日期 (Ngày kiểm tra):</strong> <input type="date" id="mInspDate" style="padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; flex-shrink: 0;"></div>
+                <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap; word-break: keep-all;"><strong>检验员 (Người kiểm tra):</strong>
+                    <select id="mInspector" style="padding: 4px; font-weight: bold; flex-shrink: 0;">
                         <option value="IQC001">IQC001</option>
                         <option value="IQC002">IQC002</option>
                         <option value="IQC003">IQC003</option>
                     </select>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <strong>总抽样数量<br>(Tổng số mẫu):</strong> 
-                    <input type="number" id="mTotalSampleQty" min="0" placeholder="必填" style="font-weight:bold; width: 75px;">
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    <strong style="word-break: keep-all;">总抽样数量<br>(Tổng số mẫu):</strong> 
+                    <input type="number" id="mTotalSampleQty" min="0" placeholder="必填(Bắt buộc)" style="font-weight:bold; width: 90px; flex-shrink: 0;">
                 </div>
-                <div><strong>抽样标准 (Tiêu chuẩn):</strong> <span class="aql-fixed-label">AQL Level II</span></div>
-                <div><strong>致命缺陷 (Critical AQL 0):</strong> <span class="aql-fixed-lock">Ac: 0 / Re: 1</span></div>
-                <div style="display: flex; align-items: center; gap: 4px;"><strong>主要缺陷 (Major AQL 0.65):</strong><span>Ac:</span> <input type="number" id="mAcMajor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Major')"><span id="badgeReMajor" class="re-auto-badge">Re: --</span></div>
-                <div style="display: flex; align-items: center; gap: 4px;"><strong>次要缺陷 (Minor AQL 2.5):</strong><span>Ac:</span> <input type="number" id="mAcMinor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Minor')"><span id="badgeReMinor" class="re-auto-badge">Re: --</span></div>
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;"><strong style="word-break: keep-all;">抽样标准 (Tiêu chuẩn):</strong> <span class="aql-fixed-label" style="white-space: nowrap; word-break: normal; flex-shrink: 0;">AQL Level II</span></div>
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;"><strong style="word-break: keep-all;">致命缺陷 (Critical AQL 0):</strong> <span class="aql-fixed-lock" style="white-space: nowrap; word-break: normal; flex-shrink: 0;">Ac: 0 / Re: 1</span></div>
+                
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    <strong style="word-break: keep-all;">主要缺陷 (Major AQL 0.65):</strong>
+                    <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap; word-break: normal; flex-shrink: 0;">
+                        <span>Ac:</span> <input type="number" id="mAcMajor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Major')">
+                        <span id="badgeReMajor" class="re-auto-badge">Re: --</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    <strong style="word-break: keep-all;">次要缺陷 (Minor AQL 2.5):</strong>
+                    <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap; word-break: normal; flex-shrink: 0;">
+                        <span>Ac:</span> <input type="number" id="mAcMinor" min="0" placeholder="0" style="font-weight: bold; width: 42px; border: 1px solid var(--physics-color);" oninput="syncReBadge('Minor')">
+                        <span id="badgeReMinor" class="re-auto-badge">Re: --</span>
+                    </div>
+                </div>
             </div>
             <div class="modal-body">
                 <table class="physics-input-table">
@@ -360,7 +377,7 @@
                     
                     <div style="margin-top: 10px; margin-bottom: 12px;">
                         <strong>审批备注 (Ghi chú phê duyệt):</strong>
-                        <textarea id="mApprovalNotes" style="width: 100%; min-height: 45px; padding: 6px; margin-top: 5px; border: 1px solid #28a745; border-radius: 4px;" placeholder="主管可在此填写特采原因、退货说明或任何审批意见..." disabled></textarea>
+                        <textarea id="mApprovalNotes" style="width: 100%; min-height: 45px; padding: 6px; margin-top: 5px; border: 1px solid #28a745; border-radius: 4px;" placeholder="主管可在此填写特采原因、退货说明或任何审批意见... / Điền ý kiến phê duyệt tại đây..." disabled></textarea>
                         <div id="printApprovalNotesBlock"></div>
                     </div>
 
@@ -377,8 +394,8 @@
                         <div>
                             <strong>主管电子签名 (Chữ ký):</strong><br>
                             <select id="mApproverName" style="width: 100%; padding: 6px; font-weight: bold; margin-top: 4px; border: 1px solid #28a745; border-radius: 4px;" disabled>
-                                <option value="QC主管" selected>QC主管</option>
-                                <option value="QA经理">QA经理</option>
+                                <option value="QC主管" selected>QC主管 / Trưởng QC</option>
+                                <option value="QA经理">QA经理 / Quản lý QA</option>
                             </select>
                         </div>
                         <div>
@@ -406,12 +423,12 @@
 
         // 💡 GitHub 开源脱敏：移除了真实的供应商信息，采用模拟数据
         const defaultSuppliers = [
-            { code: "SUP-001", name: "测试供应商 A (Test Supplier A)", level: "C级" },
-            { code: "SUP-002", name: "测试供应商 B (Test Supplier B)", level: "A/B级" },
-            { code: "SUP-003", name: "测试供应商 C (Test Supplier C)", level: "A/B级" },
-            { code: "SUP-004", name: "测试供应商 D (Test Supplier D)", level: "A/B级" },
-            { code: "SUP-005", name: "测试供应商 E (Test Supplier E)", level: "A/B级" },
-            { code: "SUP-006", name: "测试供应商 F (Test Supplier F)", level: "非指定" }
+            { code: "SUP-001", name: "测试供应商 A (Test Supplier A / Nhà cung cấp thử nghiệm A)", level: "C级" },
+            { code: "SUP-002", name: "测试供应商 B (Test Supplier B / Nhà cung cấp thử nghiệm B)", level: "A/B级" },
+            { code: "SUP-003", name: "测试供应商 C (Test Supplier C / Nhà cung cấp thử nghiệm C)", level: "A/B级" },
+            { code: "SUP-004", name: "测试供应商 D (Test Supplier D / Nhà cung cấp thử nghiệm D)", level: "A/B级" },
+            { code: "SUP-005", name: "测试供应商 E (Test Supplier E / Nhà cung cấp thử nghiệm E)", level: "A/B级" },
+            { code: "SUP-006", name: "测试供应商 F (Test Supplier F / Nhà cung cấp thử nghiệm F)", level: "非指定" }
         ];
 
         const unitTranslationMap = { "个": "个 / Cái", "千克": "千克 / Kg", "吨": "吨 / Tấn", "克": "克 / Ghi-gam", "桶/罐": "桶/罐 / Thùng/Lon", "包": "包 / Bao" };
@@ -464,11 +481,10 @@
             "包材其他": [ { id: 1, item: "外观", spec: "对签板，不能有污糟，刮花，分层，烂，图案/字体顔色偏差印刷模糊及油污" } ]
         };
 
-        // 🔑 核心权限控制：双击激活主管模式，解锁打印和审批修改权
         function activateSupervisorMode() {
-            if (isSupervisorMode) { alert("主管模式已激活，无需重复操作。"); return; }
+            if (isSupervisorMode) { alert("主管模式已激活，无需重复操作。(Chế độ Quản lý đã được kích hoạt, không cần thao tác lại.)"); return; }
             // 💡 GitHub 开源脱敏：修改了鉴权密码，并在弹窗中提示
-            const pwd = prompt("请输入 IQC 主管鉴权密码 (GitHub演示密码为 123456)：");
+            const pwd = prompt("请输入 IQC 主管鉴权密码 / Nhập mật khẩu Quản lý IQC (GitHub演示/Mật khẩu demo: 123456)：");
             if (pwd === "123456") {
                 isSupervisorMode = true;
                 document.getElementById('roleBadge').style.display = 'inline-block';
@@ -481,9 +497,9 @@
                     document.getElementById('mApprovalDate').disabled = false;
                     document.getElementById('mApprovalNotes').disabled = false;
                 }
-                alert("🟢 鉴权成功！IQC 主管审批功能已完全解封。");
+                alert("🟢 鉴权成功 / Xác thực thành công！IQC 主管审批功能已完全解封 / Quyền phê duyệt đã được mở khóa hoàn toàn。");
             } else if (pwd !== null) {
-                alert("🔴 密码错误！您没有审批权限。");
+                alert("🔴 密码错误 / Sai mật khẩu！您没有审批权限 / Bạn không có quyền phê duyệt。");
             }
         }
 
@@ -515,7 +531,6 @@
         function loadDatabaseFromStorage() { const raw = localStorage.getItem('IQC_STABLE_DB_OPEN'); if (raw) { try { dbRecords = JSON.parse(raw); } catch(e) { dbRecords = []; } } }
         function saveDatabaseToStorage() { localStorage.setItem('IQC_STABLE_DB_OPEN', JSON.stringify(dbRecords)); }
 
-        // ==================== 🛠️ 智能双向合并引擎 (Smart Merge) ====================
         function importRecords(e) {
             const file = e.target.files[0]; if (!file) return; 
             const reader = new FileReader();
@@ -542,8 +557,8 @@
                         console.log(`Smart Merge 结果: 成功替换 ${mergeCount} 条历史记录，新增 ${appendCount} 条记录。`);
                     }
                     forceChainSyncAllRecords(); 
-                    alert("✅ JSON 数据智能合并/还原成功！台账状态已精准同步。");
-                } catch(ex) { alert("JSON解析失败！请检查文件格式。"); }
+                    alert("✅ JSON 数据智能合并/还原成功！台账状态已精准同步。(Gộp/khôi phục dữ liệu JSON thành công! Đồng bộ chính xác.)");
+                } catch(ex) { alert("JSON解析失败！请检查文件格式。(Lỗi phân tích JSON! Vui lòng kiểm tra định dạng tệp.)"); }
             };
             reader.readAsText(file);
             e.target.value = ""; 
@@ -598,17 +613,18 @@
         function updateSubCategories() {
             const categorySelect = document.getElementById('materialCategory'); const subSelect = document.getElementById('materialTypeRule'); const selectedCatCode = categorySelect.value;
             if(!subSelect) return;
-            subSelect.innerHTML = ""; if (!selectedCatCode || !subCategoryMap[selectedCatCode]) { subSelect.innerHTML = '<option value="">-- 请先选择大类 --</option>'; return; }
+            subSelect.innerHTML = ""; if (!selectedCatCode || !subCategoryMap[selectedCatCode]) { subSelect.innerHTML = '<option value="">-- 请先选择大类 (Chọn phân loại lớn) --</option>'; return; }
             subCategoryMap[selectedCatCode].forEach(sub => { const opt = document.createElement('option'); opt.value = sub; opt.textContent = sub; subSelect.appendChild(opt); });
         }
         function getRuleRequirements(categoryCode, csLevel) { if (csLevel === "非指定") return { freq: "每批" }; return { freq: (csLevel === "C级") ? "6个月" : "12个月" }; }
+        
         function evaluateTestingRequirement() {
             const categoryCode = document.getElementById('materialCategory').value; const csLevel = document.getElementById('csLevel').value;
             const mNo = document.getElementById('materialNo').value.trim(); const sCode = document.getElementById('supplierCode').value.trim(); const statusBox = document.getElementById('statusResult');
             if (!categoryCode || !mNo || !sCode) { if (statusBox) statusBox.style.display = 'none'; return null; }
             const rule = getRuleRequirements(categoryCode, csLevel); const deliveryDateInput = document.getElementById('deliveryDate').value; const todayDate = deliveryDateInput ? new Date(deliveryDateInput) : new Date();
             if (rule.freq === "每批") {
-                if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🚨 【必须测试】 (每批必检类型)`; }
+                if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果 (Kết quả)：🚨 【必须测试 / Bắt buộc kiểm tra】 (每批必检类型 / Loại bắt buộc)`; }
                 return { action: "必须测试 / Bắt buộc", color: "row-red", nextDateTs: todayDate.getTime(), isFollowerInherited: false };
             }
             const existingRecords = dbRecords.filter(r => r.supplierCode.toLowerCase() === sCode.toLowerCase() && r.materialNo.toLowerCase() === mNo.toLowerCase());
@@ -616,20 +632,20 @@
                 const activeReports = existingRecords.filter(r => r.reportDateTs && !r.isFollowerInherited);
                 if (activeReports.length > 0) {
                     activeReports.sort((a,b) => b.reportDateTs - a.reportDateTs); const latestReport = activeReports[0]; let expDate = new Date(latestReport.reportDateTs); expDate.setMonth(expDate.getMonth() + (rule.freq === "6个月" ? 6 : 12));
-                    if (statusBox) { statusBox.className = "status-box status-green"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🔒 【无需测试】系统自动关联主报告（单号：${latestReport.testReportNo}）。`; }
+                    if (statusBox) { statusBox.className = "status-box status-green"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果 (Kết quả)：🔒 【无需测试 / Không cần kiểm tra】系统自动关联主报告 / Tự động liên kết báo cáo chính (单号/Mã số: ${latestReport.testReportNo}).`; }
                     document.getElementById('reportDate').value = convertToInputFormat(latestReport.reportDateTs); document.getElementById('testReportNo').value = latestReport.testReportNo;
                     return { action: "无需测试 / Không cần thiết", color: "row-green", nextDateTs: expDate.getTime(), isFollowerInherited: true };
                 }
-                if (statusBox) { statusBox.className = "status-box status-orange"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🔒 【触发智能联动锁死】检测到此物料已有前置主测试批次在待检队列中。`; }
+                if (statusBox) { statusBox.className = "status-box status-orange"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果 (Kết quả)：🔒 【触发智能联动锁死 / Khóa liên kết thông minh】检测到此物料已有前置测试 / Đã có lô kiểm tra trước đó.`; }
                 document.getElementById('reportDate').value = ""; document.getElementById('testReportNo').value = "";
                 return { action: "无需测试 / Không cần thiết", color: "row-green", nextDateTs: Date.now(), isFollowerInherited: true };
             }
-            if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果：🚨 【必须测试】当前物料设为主测试批次。`; }
+            if (statusBox) { statusBox.className = "status-box status-red"; statusBox.style.display = "block"; statusBox.innerHTML = `判定结果 (Kết quả)：🚨 【必须测试 / Bắt buộc kiểm tra】当前物料设为主批次 / Đặt làm lô chính.`; }
             return { action: "必须测试 / Bắt buộc", color: "row-red", nextDateTs: Date.now(), isFollowerInherited: false };
         }
 
         function addRecord() {
-            const form = document.getElementById('recordForm'); if (!form.checkValidity()) { alert("请填齐必填字段！"); return; }
+            const form = document.getElementById('recordForm'); if (!form.checkValidity()) { alert("请填齐必填字段！(Vui lòng điền đủ các trường bắt buộc!)"); return; }
             const qtyInput = document.getElementById('qty').value; const catCode = document.getElementById('materialCategory').value;
             const sCode = document.getElementById('supplierCode').value.trim(); const sName = document.getElementById('supplierName').value.trim(); const assignedLevel = document.getElementById('csLevel').value;
             checkAndLearnNewSupplier(sCode, sName, assignedLevel); const evalResult = evaluateTestingRequirement(); if (!evalResult) return;
@@ -668,7 +684,7 @@
             };
 
             dbRecords.push(newRecord); saveDatabaseToStorage(); forceChainSyncAllRecords();
-            document.getElementById('recordForm').reset(); const subSelect = document.getElementById('materialTypeRule'); if (subSelect) subSelect.innerHTML = '<option value="">-- 请先选择大类 --</option>';
+            document.getElementById('recordForm').reset(); const subSelect = document.getElementById('materialTypeRule'); if (subSelect) subSelect.innerHTML = '<option value="">-- 请先选择大类 (Chọn phân loại lớn) --</option>';
             const statusBox = document.getElementById('statusResult'); if (statusBox) statusBox.style.display = 'none';
             const toast = document.getElementById('toastMsg'); if (toast) toast.style.display = 'inline-flex'; setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
         }
@@ -716,7 +732,7 @@
 
             document.getElementById('mReportNoShow').innerText = rec.physicalReport.reportNo;
             document.getElementById('mMetaPo').innerText = rec.poNo; document.getElementById('mMetaItemCode').innerText = rec.materialNo; document.getElementById('mMetaItemName').innerText = rec.materialName;
-            document.getElementById('mMetaSupplier').innerText = `[${rec.supplierCode}] ${rec.supplierName}`; document.getElementById('mMetaLot').innerText = rec.lotNo || "未填";
+            document.getElementById('mMetaSupplier').innerText = `[${rec.supplierCode}] ${rec.supplierName}`; document.getElementById('mMetaLot').innerText = rec.lotNo || "未填 / Chưa điền";
             document.getElementById('mMetaQty').innerText = `${rec.qty} (${unitTranslationMap[rec.unit] || rec.unit})`;
             document.getElementById('mInspDate').value = rec.physicalReport.inspDate || convertToInputFormat(Date.now());
             document.getElementById('mInspector').value = rec.physicalReport.inspector || "IQC001";
@@ -734,7 +750,6 @@
             const isPending = rec.physicalReport.approvalStatus === "待审批";
             
             if (isSupervisorMode) {
-                // 主管模式下：全部展示并可编辑
                 document.getElementById('supervisorArea').style.display = "block";
                 document.getElementById('btnPrintApproval').style.display = "inline-block";
                 document.getElementById('mApprovalStatus').disabled = false;
@@ -742,17 +757,13 @@
                 document.getElementById('mApprovalDate').disabled = false;
                 document.getElementById('mApprovalNotes').disabled = false;
             } else {
-                // 检验员模式下
                 if (!isPending) {
-                    // 如果单据【已批准】，向检验员展示【只读】的审批区，并点亮打印按钮
                     document.getElementById('supervisorArea').style.display = "block";
                     document.getElementById('btnPrintApproval').style.display = "inline-block";
                 } else {
-                    // 尚未审批，隐藏一切审批区和打印按钮
                     document.getElementById('supervisorArea').style.display = "none";
                     document.getElementById('btnPrintApproval').style.display = "none";
                 }
-                // 检验员永远无法修改审批结论
                 document.getElementById('mApprovalStatus').disabled = true;
                 document.getElementById('mApproverName').disabled = true;
                 document.getElementById('mApprovalDate').disabled = true;
@@ -768,9 +779,9 @@
                     <td align="center">${item.id}</td>
                     <td><strong>${item.item}</strong></td>
                     <td style="font-size:0.85em; color:#666; white-space: pre-wrap;">${item.spec}</td>
-                    <td><input type="number" id="pSampleRow_${index}" value="${item.sampleQty || ''}" placeholder="数量"></td>
-                    <td><input type="number" id="pFailRow_${index}" value="${item.failQty || ''}" placeholder="不良"></td>
-                    <td><input type="text" id="pDataRow_${index}" value="${item.dataValue || ''}" placeholder="数据记录..."></td>
+                    <td><input type="number" id="pSampleRow_${index}" value="${item.sampleQty || ''}" placeholder="数量 (SL)"></td>
+                    <td><input type="number" id="pFailRow_${index}" value="${item.failQty || ''}" placeholder="不良 (Lỗi)"></td>
+                    <td><input type="text" id="pDataRow_${index}" value="${item.dataValue || ''}" placeholder="数据记录... (Ghi chép...)"></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -800,7 +811,7 @@
             rec.physicalReport.approvalNotes = document.getElementById('mApprovalNotes').value;
 
             saveDatabaseToStorage(); renderTable(); closePhysicsModal();
-            alert("🔒 检验与审批数据已安全保存至系统数据库中！");
+            alert("🔒 检验与审批数据已安全保存至系统数据库中！(Dữ liệu kiểm tra và phê duyệt đã được lưu an toàn!)");
         }
         
         function syncReBadge(type) {
@@ -815,12 +826,12 @@
         function printPhysicalReportToPDF() {
             const rec = dbRecords.find(item => item.id === currentActiveRecordIdForPhysics);
             if (!rec || !rec.physicalReport || !rec.physicalReport.reportNo) {
-                alert("无有效的报告数据，无法打印！"); return;
+                alert("无有效的报告数据，无法打印！(Không có dữ liệu báo cáo hợp lệ, không thể in!)"); return;
             }
             
             const isPending = rec.physicalReport.approvalStatus === "待审批";
             if (!isSupervisorMode && isPending) { 
-                alert("⛔ 报告尚未审批，目前无法打印最终 PDF 审批报告。"); return; 
+                alert("⛔ 报告尚未审批，目前无法打印最终 PDF 审批报告。(Báo cáo chưa được duyệt, không thể in PDF báo cáo phê duyệt.)"); return; 
             }
             
             const textareaValue = document.getElementById('mNotes').value;
@@ -872,7 +883,7 @@
                 Object.keys(treeGroup[yearStr]).forEach(m => { yearTotalBatches += treeGroup[yearStr][m].length; });
 
                 const yearTr = document.createElement('tr'); yearTr.className = "year-group-header";
-                yearTr.innerHTML = `<td colspan="15" style="padding: 11px 10px; text-align:left; font-weight:bold;">${isYearCollapsed ? '➕' : '➖'} 📅 归档年份：${yearStr} (${yearTotalBatches} 批次)</td>`;
+                yearTr.innerHTML = `<td colspan="15" style="padding: 11px 10px; text-align:left; font-weight:bold;">${isYearCollapsed ? '➕' : '➖'} 📅 归档年份 (Năm lưu trữ)：${yearStr} (${yearTotalBatches} 批次 / Lô)</td>`;
                 yearTr.style.cursor = "pointer";
                 yearTr.onclick = function() { collapsedYearsState[yearStr] = !collapsedYearsState[yearStr]; renderTable(); };
                 tbody.appendChild(yearTr);
@@ -887,7 +898,7 @@
                     const matchedRecords = monthsInYear[monthStr];
 
                     const monthTr = document.createElement('tr'); monthTr.className = "month-group-header";
-                    monthTr.innerHTML = `<td colspan="15" style="padding: 9px 10px 9px 25px; text-align:left; font-weight:bold;">${isMonthCollapsed ? '➕' : '➖'} 到货月份：${monthStr} (${matchedRecords.length} 批次)</td>`;
+                    monthTr.innerHTML = `<td colspan="15" style="padding: 9px 10px 9px 25px; text-align:left; font-weight:bold;">${isMonthCollapsed ? '➕' : '➖'} 到货月份 (Tháng nhận)：${monthStr} (${matchedRecords.length} 批次 / Lô)</td>`;
                     monthTr.style.cursor = "pointer";
                     monthTr.onclick = function() { collapsedMonthsState[fullMonthCombinedKey] = !collapsedMonthsState[fullMonthCombinedKey]; renderTable(); };
                     tbody.appendChild(monthTr);
@@ -896,11 +907,11 @@
 
                     matchedRecords.forEach(r => {
                         const tr = document.createElement('tr'); tr.className = r.colorClass || ''; const isLocked = r.isFollowerInherited;
-                        const dateText = r.reportDateTs ? renderComputerDate(r.reportDateTs) : (isLocked ? `[锁定: 跟随主批次]` : `[双击补充日期]`);
-                        const reportNoText = r.testReportNo ? r.testReportNo : (isLocked ? `[锁定: 跟随主批次]` : `[双击补充编号]`);
+                        const dateText = r.reportDateTs ? renderComputerDate(r.reportDateTs) : (isLocked ? `[锁定: 跟随主批次 / Khóa: Theo lô chính]` : `[双击补充日期 / Nhấp đúp thêm ngày]`);
+                        const reportNoText = r.testReportNo ? r.testReportNo : (isLocked ? `[锁定: 跟随主批次 / Khóa: Theo lô chính]` : `[双击补充编号 / Nhấp đúp thêm mã số]`);
                         const translatedUnit = unitTranslationMap[r.unit] || r.unit || '个 / Cái';
 
-                        let physicsStatusText = "⏳ 待检验 (未录入)"; let physicsColorBtnClass = "btn-p-wait"; 
+                        let physicsStatusText = "⏳ 待检验 (未录入 / Chưa nhập)"; let physicsColorBtnClass = "btn-p-wait"; 
                         if (r.physicalReport && r.physicalReport.finalStatus !== "待判定") {
                             const appStatus = r.physicalReport.approvalStatus || "待审批";
                             if (appStatus === "待审批") {
@@ -1003,8 +1014,8 @@
 
         function deleteSelectedRecords() {
             const checkboxes = document.querySelectorAll('.row-select:checked');
-            if (checkboxes.length === 0) { alert("请先勾选需要删除的行！"); return; }
-            if (!confirm("确定要删除选中的" + checkboxes.length + "条记录吗？")) return;
+            if (checkboxes.length === 0) { alert("请先勾选需要删除的行！(Vui lòng tích chọn các dòng cần xóa!)"); return; }
+            if (!confirm("确定要删除选中的 / Bạn có chắc chắn muốn xóa " + checkboxes.length + " 条记录吗 / bản ghi đã chọn không？")) return;
             checkboxes.forEach(cb => { dbRecords = dbRecords.filter(r => r.id !== cb.value); });
             saveDatabaseToStorage(); renderTable();
             document.getElementById('selectAll').checked = false;
@@ -1013,7 +1024,7 @@
         // 💡 GitHub 开源脱敏：修改了导出的 JSON 前缀，移除商业信息
         function exportSelectedRecordsToJSON() {
             const checkboxes = document.querySelectorAll('.row-select:checked');
-            if (checkboxes.length === 0) { alert("🚨 请先在台账左侧勾选您想要单独导出来货的批次！"); return; }
+            if (checkboxes.length === 0) { alert("🚨 请先在台账左侧勾选您想要单独导出来货的批次！(Vui lòng tích chọn các lô muốn xuất ở bên trái sổ quản lý!)"); return; }
             try {
                 const selectedIds = Array.from(checkboxes).map(cb => cb.value);
                 const filteredRecords = dbRecords.filter(r => selectedIds.includes(r.id));
@@ -1032,7 +1043,7 @@
                 a.href = url; 
                 a.download = `IQC_${prefix}_${dateStr}_${timeStr}.json`; 
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-            } catch (err) { alert("勾选批次导出失败: " + err.message); }
+            } catch (err) { alert("勾选批次导出失败 (Lỗi xuất lô đã chọn): " + err.message); }
         }
 
         // 💡 GitHub 开源脱敏：修改了导出的备份文件名前缀
@@ -1048,20 +1059,20 @@
                 a.download = `IQC_Integrated_DB_Backup_${dateStr}_${timeStr}.json`; 
                 
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-            } catch (err) { alert("JSON备份导出失败: " + err.message); }
+            } catch (err) { alert("JSON备份导出失败 (Lỗi xuất sao lưu JSON): " + err.message); }
         }
 
         function exportToExcel() {
-            if (!dbRecords || dbRecords.length === 0) { alert("没有数据可以导出！"); return; }
+            if (!dbRecords || dbRecords.length === 0) { alert("没有数据可以导出！(Không có dữ liệu để xuất!)"); return; }
             const excelRows = dbRecords.map((r, index) => {
-                let outStatus = "未录入";
+                let outStatus = "未录入 / Chưa nhập";
                 if (r.physicalReport && r.physicalReport.finalStatus !== "待判定") {
-                    outStatus = r.physicalReport.finalStatus.includes("AOD") ? "初判 AOD" : r.physicalReport.finalStatus;
+                    outStatus = r.physicalReport.finalStatus.includes("AOD") ? "初判 AOD / Sơ bộ AOD" : r.physicalReport.finalStatus;
                 }
                 return {
                     "序号 (STT)": index + 1, 
-                    "送货单号 (Mã PO)": r.poNo || "", 
-                    "交货日期 (Ngày giao)": r.deliveryDateTs ? new Date(r.deliveryDateTs).toLocaleDateString() : "",
+                    "送货单号 (Mã phiếu giao hàng)": r.poNo || "", 
+                    "收货日期 (Ngày nhận)": r.deliveryDateTs ? new Date(r.deliveryDateTs).toLocaleDateString() : "",
                     "供应商代码 (Mã NCC)": r.supplierCode || "", 
                     "供应商名称 (Tên NCC)": r.supplierName || "", 
                     "供应商等级 (Cấp NCC)": r.csLevel || "",
@@ -1069,25 +1080,25 @@
                     "物料细类 (Loại chi tiết)": r.materialTypeRule || "", 
                     "物料编号 (Mã vật liệu)": r.materialNo || "", 
                     "物料名称 (Tên vật liệu)": r.materialName || "",
-                    "化学报告日期 (Ngày BC)": r.reportDateTs ? new Date(r.reportDateTs).toLocaleDateString() : "未填", 
-                    "化验报告编号 (Mã BC)": r.testReportNo || "未填", 
+                    "化验报告日期 (Ngày BC Hóa nghiệm)": r.reportDateTs ? new Date(r.reportDateTs).toLocaleDateString() : "未填 / Chưa điền", 
+                    "化验报告编号 (Mã BC Hóa nghiệm)": r.testReportNo || "未填 / Chưa điền", 
                     "数量 (Số lượng)": r.qty || 0, 
                     "单位 (Đơn vị)": unitTranslationMap[r.unit] || r.unit || "", 
-                    "化学频次判定": r.decision || "",
-                    "物理检验报告单号": (r.physicalReport ? (r.physicalReport.reportNo || "") : ""),
-                    "物理总抽样数": (r.physicalReport ? (r.physicalReport.totalSampleQty || 0) : 0),
-                    "物理Major_Ac数": (r.physicalReport ? (r.physicalReport.aqlMajor || 0) : 0),
-                    "物理Minor_Ac数": (r.physicalReport ? (r.physicalReport.aqlMinor || 0) : 0),
-                    "检验员初判结论": outStatus, 
-                    "物理检验员": (r.physicalReport ? (r.physicalReport.inspector || "") : ""), 
-                    "物理检验日期": (r.physicalReport ? (r.physicalReport.inspDate || "") : ""),
-                    "主管审批结论": (r.physicalReport ? (r.physicalReport.approvalStatus || "待审批") : "待审批"),
-                    "主管签名": (r.physicalReport ? (r.physicalReport.approverName || "") : ""),
-                    "审批日期": (r.physicalReport ? (r.physicalReport.approvalDate || "") : "")
+                    "化验频次判定 (Trạng thái Hóa nghiệm)": r.decision || "",
+                    "物理检验报告单号 (Mã BC Vật lý)": (r.physicalReport ? (r.physicalReport.reportNo || "") : ""),
+                    "物理总抽样数 (Tổng số mẫu)": (r.physicalReport ? (r.physicalReport.totalSampleQty || 0) : 0),
+                    "物理Major_Ac数 (Major_Ac)": (r.physicalReport ? (r.physicalReport.aqlMajor || 0) : 0),
+                    "物理Minor_Ac数 (Minor_Ac)": (r.physicalReport ? (r.physicalReport.aqlMinor || 0) : 0),
+                    "检验员初判结论 (Kết luận sơ bộ)": outStatus, 
+                    "物理检验员 (Người kiểm tra)": (r.physicalReport ? (r.physicalReport.inspector || "") : ""), 
+                    "物理检验日期 (Ngày kiểm tra)": (r.physicalReport ? (r.physicalReport.inspDate || "") : ""),
+                    "主管审批结论 (Kết luận phê duyệt)": (r.physicalReport ? (r.physicalReport.approvalStatus || "待审批") : "待审批"),
+                    "主管签名 (Chữ ký Quản lý)": (r.physicalReport ? (r.physicalReport.approverName || "") : ""),
+                    "审批日期 (Ngày phê duyệt)": (r.physicalReport ? (r.physicalReport.approvalDate || "") : "")
                 };
             });
             const worksheet = XLSX.utils.json_to_sheet(excelRows); const workbook = XLSX.utils.book_new(); 
-            XLSX.utils.book_append_sheet(workbook, worksheet, "综合质量管理台账");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "综合质量管理台账 (Sổ QC Tổng hợp)");
             // 💡 GitHub 开源脱敏：修改了导出的 Excel 文件名前缀
             XLSX.writeFile(workbook, `IQC_Comprehensive_Ledger_${getFormattedDateOnly()}_${getFormattedTimeOnly()}.xlsx`);
         }
