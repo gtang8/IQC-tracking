@@ -2,7 +2,7 @@
  [中文](./readme_cn.md) / [Tiếng Việt](./readme_vn.md)
 ---
 
-# 📘 Mattel IQC Incoming Material Testing and Tracking System Standard Operating Procedure
+# 📘 IQC Incoming Material Testing and Tracking System Standard Operating Procedure
 
 This system utilizes a "Dual-Role Physical Isolation" and "Offline File Relay" workflow. The **IQC Inspector** and **Quality Supervisor** operate independently on their own computers, using JSON file exports and imports to relay documents and merge data seamlessly.
 
