@@ -2,7 +2,7 @@
 [英文](./readme_en.md) / [中文](./readme_cn.md) 
 ---
 
-# Phiên bản tiếng Việt: Sổ tay Hướng dẫn Thao tác Tiêu chuẩn Hệ thống Theo dõi và Kiểm tra Đầu vào IQC Mattel
+# Phiên bản tiếng Việt: Sổ tay Hướng dẫn Thao tác Tiêu chuẩn Hệ thống Theo dõi và Kiểm tra Đầu vào IQC
 
 Hệ thống này áp dụng mô hình làm việc "cách ly vật lý hai vai trò" và "chuyển tiếp tập tin ngoại tuyến". **Nhân viên kiểm tra** và **Quản lý chất lượng** thao tác độc lập trên máy tính của từng người, thông qua việc xuất/nhập tập tin JSON để luân chuyển chứng từ và gộp dữ liệu.
 
